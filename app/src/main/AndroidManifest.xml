@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.pinnaclebiometrics.floecompanionapp">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name=".FloeMainMenuAct"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".FloeCalibrationAct"
+            android:label="@string/title_activity_floe_calibration"
+            android:parentActivityName=".FloeMainMenuAct"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="FloeMainMenuAct" />
+        </activity>
+        <activity
+            android:name=".FloeRTFeedbackAct"
+            android:label="@string/title_activity_floe_rtfeedback"
+            android:parentActivityName=".FloeMainMenuAct"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="FloeMainMenuAct" />
+        </activity>
+        <activity
+            android:name=".FloeRecordingAct"
+            android:label="@string/title_activity_floe_recording"
+            android:parentActivityName=".FloeMainMenuAct"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="FloeMainMenuAct" />
+        </activity>
+        <activity
+            android:name=".FloeReviewListAct"
+            android:label="@string/title_activity_floe_review_list"
+            android:parentActivityName=".FloeMainMenuAct"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="FloeMainMenuAct" />
+        </activity>
+        <activity
+            android:name=".FloeRunReviewAct"
+            android:label="@string/title_activity_floe_run_review"
+            android:parentActivityName=".FloeReviewListAct"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="FloeReviewListAct" />
+        </activity>
+    </application>
+
+</manifest>

@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">FloeCompanionApp</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_floe_calibration">FloeCalibrationAct</string>
+    <string name="title_activity_floe_rtfeedback">FloeRTFeedbackAct</string>
+    <string name="title_activity_floe_recording">FloeRecordingAct</string>
+    <string name="title_activity_floe_review_list">FloeReviewListAct</string>
+    <string name="title_activity_floe_run_review">FloeRunReviewAct</string>
+</resources>
