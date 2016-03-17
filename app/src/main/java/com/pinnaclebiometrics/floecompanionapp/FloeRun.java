@@ -9,6 +9,7 @@ public class FloeRun
     private int runTime;
     private int runDuration;
     private String runName;
+    //Do we need another attribute with the location of beginning of this run's data in the datPt table?
 
     FloeRun()
     {
