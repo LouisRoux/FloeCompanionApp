@@ -12,4 +12,37 @@
     tools:context="com.pinnaclebiometrics.floecompanionapp.FloeCalibrationAct"
     tools:showIn="@layout/activity_floe_calibration">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Please stand with your weight centered on your skis!"
+        android:textAlignment="center"
+        android:id="@+id/textView"
+        android:layout_marginTop="125dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="START CALIBRATING!"
+        android:id="@+id/startCal"
+        android:layout_below="@+id/textView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="80dp"
+        android:height="100dp"
+        android:onClick="getWeight" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Large Text"
+        android:id="@+id/testText"
+        android:layout_below="@+id/startCal"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="42dp" />
+
 </RelativeLayout>

@@ -6,4 +6,7 @@
     <string name="title_activity_floe_recording">FloeRecordingAct</string>
     <string name="title_activity_floe_review_list">FloeReviewListAct</string>
     <string name="title_activity_floe_run_review">FloeRunReviewAct</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

@@ -63,6 +63,19 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="FloeReviewListAct" />
         </activity>
+
+        <service
+            android:name=".FloeDataTransmissionSvc"
+            android:enabled="true"
+            android:exported="true" />
+        <service
+            android:name=".FloeBLESvc"
+            android:enabled="true"
+            android:exported="true" />
+        <service
+            android:name=".FloeRunReviewSvc"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>
