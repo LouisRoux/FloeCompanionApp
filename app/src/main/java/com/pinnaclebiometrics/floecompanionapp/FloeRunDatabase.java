@@ -76,7 +76,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
     {
         //create new entry in Runs table
         int runID;
-        return runID;
+        return runID;//ok
     }
 
     public FloeRun getRun(int runID)
