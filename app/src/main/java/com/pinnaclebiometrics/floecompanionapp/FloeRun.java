@@ -5,8 +5,8 @@ package com.pinnaclebiometrics.floecompanionapp;
  */
 public class FloeRun
 {
-    private int runID;
-    private int runTime;
+    private long runID;
+    private long runTime;
     private int runDuration;
     private String runName;
     //Do we need another attribute with the location of beginning of this run's data in the datPt table?
@@ -24,23 +24,23 @@ public class FloeRun
         setRunName(generateRunName());
     }
 
-    public int getRunID()
+    public long getRunID()
     {
         return runID;
     }
 
-    public void setRunID(int runID)
+    public void setRunID(long runID)
     {
         this.runID = runID;
     }
 
 
-    public int getRunTime()
+    public long getRunTime()
     {
         return runTime;
     }
 
-    public void setRunTime(int runTime)
+    public void setRunTime(long runTime)
     {
         this.runTime = runTime;
     }
@@ -72,6 +72,7 @@ public class FloeRun
     {
         String newName="";
         //generate a run name from the timestamp
+        //todo write name generator
 
         return newName;
     }

@@ -5,9 +5,10 @@ package com.pinnaclebiometrics.floecompanionapp;
  */
 public class FloeDataPt
 {
-    private int runID;
-    private int dataPtNum;
-    private int timeStamp;
+    private long dataPtID;//unique identifier for this data point
+    private long runID;//what run this point belongs to
+    private long dataPtNum;//where in the run this data point goes
+    private long timeStamp;
     private double[] sensorData;//size 8. starts at 0 for left foot, index increases as numbers in design specs fig 6.5
     private double[] centreOfPressure;//array of size 2. x-dir is location 0, y-dir is location 1.
 
@@ -41,37 +42,49 @@ public class FloeDataPt
         else
         {
             //Throw error?
+            //todo write error message
         }
     }
 
-    public int getRunID()
+    public long getDataPtID()
+    {
+        return dataPtID;
+    }
+
+    public void setDataPtID(long dataPtID)
+    {
+        this.dataPtID = dataPtID;
+    }
+
+
+    public long getRunID()
     {
         return runID;
     }
 
-    public void setRunID(int runID)
+    public void setRunID(long runID)
     {
         this.runID = runID;
     }
 
 
-    public int getDataPtNum()
+    public long getDataPtNum()
     {
         return dataPtNum;
     }
 
-    public void setDataPtNum(int dataPtNum)
+    public void setDataPtNum(long dataPtNum)
     {
         this.dataPtNum = dataPtNum;
     }
 
 
-    public int getTimeStamp()
+    public long getTimeStamp()
     {
         return timeStamp;
     }
 
-    public void setTimeStamp(int timeStamp)
+    public void setTimeStamp(long timeStamp)
     {
         this.timeStamp = timeStamp;
     }
