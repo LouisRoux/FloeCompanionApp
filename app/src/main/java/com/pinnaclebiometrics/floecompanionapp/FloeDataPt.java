@@ -1,5 +1,7 @@
 package com.pinnaclebiometrics.floecompanionapp;
 
+import android.util.Log;
+
 /**
  * Created by Louis on 16/03/2016.
  */
@@ -14,18 +16,7 @@ public class FloeDataPt
 
     FloeDataPt()
     {
-        //create empty object with all invalid values for attributes? or nothing?
-        /*
-        this.runID=-1;
-        this.dataPtNum=-1;
-        this.timeStamp=-1;
-        for(int i=0; i<8; i++)
-        {
-            this.sensorData[i]=-1;
-        }
-        this.centreOfPressure[0]=0;
-        this.centreOfPressure[1]=0;
-        */
+        //empty constructor
     }
 
     FloeDataPt(int runID, int dataPtNum, int timeStamp, double[] sensorData, double[] centreOfPressure)
@@ -41,8 +32,7 @@ public class FloeDataPt
         }
         else
         {
-            //Throw error?
-            //todo write error message
+            Log.e("INVALID_ARRAY_LENGTH", "The length of the sensorData or centreOfPressure array passed to the FloeDataPt constructor was invalid");
         }
     }
 
@@ -102,7 +92,10 @@ public class FloeDataPt
 
     public void setSensorData(double[] sensorData)
     {
-        this.sensorData = sensorData;
+        for(int i=0; i<8; i++)
+        {
+            this.sensorData[i] = sensorData[i];
+        }
     }
 
     public void setSensorData(int sensorNum, double value)
@@ -122,7 +115,10 @@ public class FloeDataPt
 
     public void setCentreOfPressure(double[] centreOfPressure)
     {
-        this.centreOfPressure=centreOfPressure;
+        for(int i=0; i<2; i++)
+        {
+            this.centreOfPressure[i] = centreOfPressure[i];
+        }
     }
 
     public void setCentreOfPressure(int direction, double value)
