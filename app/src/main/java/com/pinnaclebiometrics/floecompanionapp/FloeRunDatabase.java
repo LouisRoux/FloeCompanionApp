@@ -61,9 +61,9 @@ public class FloeRunDatabase extends SQLiteOpenHelper
     @Override
     public void onCreate(SQLiteDatabase dataBase)
     {
-        //Create tables
-        dataBase.execSQL(CREATE_TABLE_RUNS);
-        dataBase.execSQL(CREATE_TABLE_DATA_PTS);
+            //Create tables
+            dataBase.execSQL(CREATE_TABLE_RUNS);
+            dataBase.execSQL(CREATE_TABLE_DATA_PTS);
     }
 
     @Override
@@ -102,7 +102,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
 
         String selectQuery = "SELECT  * FROM "+TABLE_RUNS+" WHERE "+KEY_RUN_ID+" = "+runID;
 
-        Log.e("DATABASE_QUERY_SENT", selectQuery);
+        Log.e("getRun sent dbQuery", selectQuery);
 
         Cursor curs = db.rawQuery(selectQuery, null);
 
@@ -126,7 +126,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         List<FloeRun> allRuns = new ArrayList<FloeRun>();
         String selectQuery = "SELECT  * FROM " + TABLE_RUNS;
 
-        Log.e("DATABASE_QUERY_SENT", selectQuery);
+        Log.e("getAllRuns sent dbQuery", selectQuery);
 
         Cursor curs = db.rawQuery(selectQuery, null);
 
@@ -155,7 +155,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         SQLiteDatabase db = this.getWritableDatabase();
         String selectQuery = "SELECT  * FROM "+TABLE_DATA_PTS+" WHERE "+KEY_RUN_ID+" = "+runID;
 
-        Log.e("DATABASE_QUERY_SENT", selectQuery);
+        Log.e("deleteRun sent dbQuery", selectQuery);
 
         Cursor curs = db.rawQuery(selectQuery, null);
 
@@ -224,6 +224,8 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         String selectQuery = "SELECT  * FROM "+TABLE_DATA_PTS+" WHERE "+KEY_DATA_PT_ID+" = "+dataPtID;
         Cursor curs = db.rawQuery(selectQuery, null);
 
+        Log.e("getDataPt sent dbQuery", selectQuery);
+
         if(curs != null)
         {
             curs.moveToFirst();
@@ -256,7 +258,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         // The following statement stores into selectQuery the following string: SELECT * FROM data_Pts tdp, runs tr WHERE tdp.run_ID = ‘[runID]’ AND tr.run_ID = tdp.run_id
         String selectQuery = "SELECT * FROM "+TABLE_DATA_PTS+" tdp, "+TABLE_RUNS+" tr WHERE tdp."+KEY_RUN_ID+" = /'"+runID+"/' AND tr."+KEY_RUN_ID+" = tdp."+KEY_RUN_ID;
 
-        Log.e("DATABASE_QUERY_SENT", selectQuery);
+        Log.e("getRunDataPts sent dbQuery", selectQuery);
 
         Cursor curs = db.rawQuery(selectQuery, null);
 
