@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -9,7 +10,7 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.pinnaclebiometrics.floecompanionapp.FloeBLEScanAct"
-    tools:showIn="@layout/activity_floe_blescan">
+    tools:context="com.pinnaclebiometrics.floecompanionapp.FloeDeviceListAct"
+    tools:showIn="@layout/activity_floe_device_list">
 
 </RelativeLayout>

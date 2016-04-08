@@ -14,9 +14,8 @@ public class FloeBLESvc extends Service
     private final IBinder bleBinder = new FloeBLEBinder();
     private boolean devicesTethered = false;
 
-    //TODO: figure out if we need multiple adapters/managers (one per foot, or not?)
     final private BluetoothManager bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-    private BluetoothAdapter bleAdapter = bleManager.getAdapter();//TODO: Change minimum API version to 18
+    private BluetoothAdapter bleAdapter = bleManager.getAdapter();
 
     public FloeBLESvc()
     {
@@ -26,14 +25,7 @@ public class FloeBLESvc extends Service
     @Override
     public IBinder onBind(Intent intent)
     {
-        //check if bluetooth is enabled and prompt to enable if it isn't
-        if(bleAdapter == null || !bleAdapter.isEnabled())
-        {
-            Log.e("BLESvc", "Bluetooth is not enabled");
-            Intent enableBLEIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBLEIntent, REQUEST_ENABLE_BT);//TODO: put this check in the activity that needs to use BLE
-        }
-
+        //do stuff
         return bleBinder;
     }
 
