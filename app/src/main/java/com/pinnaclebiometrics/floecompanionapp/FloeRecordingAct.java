@@ -30,6 +30,7 @@ public class FloeRecordingAct extends AppCompatActivity
     private static final int STATE_OFF = 10;
 
     private FloeDataTransmissionSvc dataService;
+    private FloeBLESvc bleService;
 
     //the connected bluetooth devices and their adapters
     private final BluetoothManager bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -81,6 +82,12 @@ public class FloeRecordingAct extends AppCompatActivity
     }
 
     @Override
+    onStart()
+    {
+
+    }
+
+    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data)
     {
         switch(requestCode)
@@ -89,17 +96,40 @@ public class FloeRecordingAct extends AppCompatActivity
                 if (resultCode == Activity.RESULT_OK && data != null)
                 {
                     String deviceAddress = data.getStringExtra(BluetoothDevice.EXTRA_DEVICE);
-                    bleDevice1 = bleAdapter.getRemoteDevice(deviceAddress);
 
-                    Log.d(TAG, "... onActivityResultdevice.address==" + bleDevice1 + "mserviceValue" + mService);
-                    ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ " - connecting");
-                    mService.connect(deviceAddress);
+                    if(bleDevice1==null)
+                    {
+                        bleDevice1 = bleAdapter.getRemoteDevice(deviceAddress);
+                        Log.d(TAG, "... onActivityResultdevice.address==" + bleDevice1 + "bleserviceValue" + bleService);
+                        bleService.connect(deviceAddress, 1);
+                    }else if(bleDevice2==null)
+                    {
+                        bleDevice2 = bleAdapter.getRemoteDevice(deviceAddress);
+                        Log.d(TAG, "... onActivityResultdevice.address==" + bleDevice2 + "bleserviceValue" + bleService);
+                        bleService.connect(deviceAddress, 2);
+                    }else
+                    {
+                        Log.e(TAG, "Both devices supposedly already connected, why has this been called 3 times?")
+                    }
                 }
+                break;
 
             case REQUEST_ENABLE_BT:
+                if(resultCode == Activity.RESULT_OK)
+                {
+                    Toast.makeText(this, "Bluetooth has turned on ", Toast.LENGTH_SHORT).show();
+                } else
+                {
+                    // User did not enable Bluetooth or an error occurred
+                    Log.d(TAG, "BT not enabled");
+                    Toast.makeText(this, "Problem in BT Turning ON ", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+                break;
 
             default:
-
+                Log.e(TAG, "wrong request code");
+                break;
         }
     }
 

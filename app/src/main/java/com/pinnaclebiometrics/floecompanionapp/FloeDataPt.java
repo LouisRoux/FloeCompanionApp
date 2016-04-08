@@ -11,15 +11,15 @@ public class FloeDataPt
     private long runID;//what run this point belongs to
     private long dataPtNum;//where in the run this data point goes
     private long timeStamp;
-    private double[] sensorData;//size 8. starts at 0 for left foot, index increases as numbers in design specs fig 6.5
-    private double[] centreOfPressure;//array of size 2. x-dir is location 0, y-dir is location 1.
+    private int[] sensorData;//size 8. starts at 0 for left foot, index increases as numbers in design specs fig 6.5
+    private int[] centreOfPressure;//array of size 2. x-dir is location 0, y-dir is location 1.
 
     FloeDataPt()
     {
         //empty constructor
     }
 
-    FloeDataPt(int runID, int dataPtNum, int timeStamp, double[] sensorData, double[] centreOfPressure)
+    FloeDataPt(int runID, int dataPtNum, int timeStamp, int[] sensorData, int[] centreOfPressure)
     {
         //create object using the provided sensor input. Make sure to check array sizes and throw error if appropriate
         if(sensorData.length==8 && centreOfPressure.length==2)
@@ -80,17 +80,17 @@ public class FloeDataPt
     }
 
 
-    public double[] getSensorData()
+    public int[] getSensorData()
     {
         return sensorData;
     }
 
-    public double getSensorData(int sensorNum)
+    public int getSensorData(int sensorNum)
     {//do we need this method?
         return sensorData[sensorNum];
     }
 
-    public void setSensorData(double[] sensorData)
+    public void setSensorData(int[] sensorData)
     {
         for(int i=0; i<8; i++)
         {
@@ -98,22 +98,22 @@ public class FloeDataPt
         }
     }
 
-    public void setSensorData(int sensorNum, double value)
+    public void setSensorData(int sensorNum, int value)
     {//do we need this method?
         this.sensorData[sensorNum]=value;
     }
 
-    public double[] getCentreOfPressure()
+    public int[] getCentreOfPressure()
     {
         return centreOfPressure;
     }
 
-    public double getCentreOfPressure(int direction)
+    public int getCentreOfPressure(int direction)
     {//do we need this method?
         return centreOfPressure[direction];
     }
 
-    public void setCentreOfPressure(double[] centreOfPressure)
+    public void setCentreOfPressure(int[] centreOfPressure)
     {
         for(int i=0; i<2; i++)
         {
@@ -121,7 +121,7 @@ public class FloeDataPt
         }
     }
 
-    public void setCentreOfPressure(int direction, double value)
+    public void setCentreOfPressure(int direction, int value)
     {//do we need this method?
         this.centreOfPressure[direction]=value;
     }

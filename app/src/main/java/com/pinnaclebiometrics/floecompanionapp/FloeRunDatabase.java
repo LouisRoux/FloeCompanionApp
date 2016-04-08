@@ -50,7 +50,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
     private static final String CREATE_TABLE_RUNS = "CREATE TABLE "+TABLE_RUNS+" ("+KEY_RUN_ID+" INTEGER PRIMARY KEY, "+KEY_RUN_TIME+" INTEGER, "+KEY_RUN_DURATION+" INTEGER, "+KEY_RUN_NAME+" TEXT)";
 
     //DataPts Table create statement
-    private static final String CREATE_TABLE_DATA_PTS = "CREATE TABLE "+TABLE_DATA_PTS+" ("+KEY_DATA_PT_ID+" INTEGER PRIMARY KEY, "+KEY_RUN_ID+" INTEGER, "+KEY_DATA_PT_NUM+" INTEGER, "+KEY_TIMESTAMP+" INTEGER, "+KEY_SENSOR_0+" REAL, "+KEY_SENSOR_1+" REAL, "+KEY_SENSOR_2+" REAL, "+KEY_SENSOR_3+" REAL, "+KEY_SENSOR_4+" REAL, "+KEY_SENSOR_5+" REAL, "+KEY_SENSOR_6+" REAL, "+KEY_SENSOR_7+" REAL, "+KEY_COP_X+" REAL, "+KEY_COP_Y+" REAL)";
+    private static final String CREATE_TABLE_DATA_PTS = "CREATE TABLE "+TABLE_DATA_PTS+" ("+KEY_DATA_PT_ID+" INTEGER PRIMARY KEY, "+KEY_RUN_ID+" INTEGER, "+KEY_DATA_PT_NUM+" INTEGER, "+KEY_TIMESTAMP+" INTEGER, "+KEY_SENSOR_0+" INTEGER, "+KEY_SENSOR_1+" INTEGER, "+KEY_SENSOR_2+" INTEGER, "+KEY_SENSOR_3+" INTEGER, "+KEY_SENSOR_4+" INTEGER, "+KEY_SENSOR_5+" INTEGER, "+KEY_SENSOR_6+" INTEGER, "+KEY_SENSOR_7+" INTEGER, "+KEY_COP_X+" INTEGER, "+KEY_COP_Y+" INTEGER)";
 
 
     FloeRunDatabase(Context context)
@@ -235,16 +235,16 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         dataPt.setRunID(curs.getLong(curs.getColumnIndex(KEY_RUN_ID)));
         dataPt.setDataPtNum(curs.getLong(curs.getColumnIndex(KEY_DATA_PT_NUM)));
         dataPt.setTimeStamp(curs.getLong(curs.getColumnIndex(KEY_TIMESTAMP)));
-        dataPt.setSensorData(0,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_0)));
-        dataPt.setSensorData(1,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_1)));
-        dataPt.setSensorData(2,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_2)));
-        dataPt.setSensorData(3,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_3)));
-        dataPt.setSensorData(4,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_4)));
-        dataPt.setSensorData(5,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_5)));
-        dataPt.setSensorData(6,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_6)));
-        dataPt.setSensorData(7,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_7)));
-        dataPt.setCentreOfPressure(0,curs.getDouble(curs.getColumnIndex(KEY_COP_X)));
-        dataPt.setCentreOfPressure(1,curs.getDouble(curs.getColumnIndex(KEY_COP_Y)));
+        dataPt.setSensorData(0,curs.getInt(curs.getColumnIndex(KEY_SENSOR_0)));
+        dataPt.setSensorData(1,curs.getInt(curs.getColumnIndex(KEY_SENSOR_1)));
+        dataPt.setSensorData(2,curs.getInt(curs.getColumnIndex(KEY_SENSOR_2)));
+        dataPt.setSensorData(3,curs.getInt(curs.getColumnIndex(KEY_SENSOR_3)));
+        dataPt.setSensorData(4,curs.getInt(curs.getColumnIndex(KEY_SENSOR_4)));
+        dataPt.setSensorData(5,curs.getInt(curs.getColumnIndex(KEY_SENSOR_5)));
+        dataPt.setSensorData(6,curs.getInt(curs.getColumnIndex(KEY_SENSOR_6)));
+        dataPt.setSensorData(7,curs.getInt(curs.getColumnIndex(KEY_SENSOR_7)));
+        dataPt.setCentreOfPressure(0,curs.getInt(curs.getColumnIndex(KEY_COP_X)));
+        dataPt.setCentreOfPressure(1,curs.getInt(curs.getColumnIndex(KEY_COP_Y)));
 
         return dataPt;
     }
@@ -258,7 +258,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         // The following statement stores into selectQuery the following string: SELECT * FROM data_Pts tdp, runs tr WHERE tdp.run_ID = ‘[runID]’ AND tr.run_ID = tdp.run_id
         String selectQuery = "SELECT * FROM "+TABLE_DATA_PTS+" tdp, "+TABLE_RUNS+" tr WHERE tdp."+KEY_RUN_ID+" = /'"+runID+"/' AND tr."+KEY_RUN_ID+" = tdp."+KEY_RUN_ID;
 
-        Log.e("getRunDataPts sent dbQuery", selectQuery);
+        Log.d("getRunDataPts", selectQuery);
 
         Cursor curs = db.rawQuery(selectQuery, null);
 
@@ -273,16 +273,16 @@ public class FloeRunDatabase extends SQLiteOpenHelper
                 dataPt.setRunID(curs.getLong(curs.getColumnIndex(KEY_RUN_ID)));
                 dataPt.setDataPtNum(curs.getLong(curs.getColumnIndex(KEY_DATA_PT_NUM)));
                 dataPt.setTimeStamp(curs.getLong(curs.getColumnIndex(KEY_TIMESTAMP)));
-                dataPt.setSensorData(0, curs.getDouble(curs.getColumnIndex(KEY_SENSOR_0)));
-                dataPt.setSensorData(1,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_1)));
-                dataPt.setSensorData(2,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_2)));
-                dataPt.setSensorData(3,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_3)));
-                dataPt.setSensorData(4,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_4)));
-                dataPt.setSensorData(5,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_5)));
-                dataPt.setSensorData(6,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_6)));
-                dataPt.setSensorData(7,curs.getDouble(curs.getColumnIndex(KEY_SENSOR_7)));
-                dataPt.setCentreOfPressure(0, curs.getDouble(curs.getColumnIndex(KEY_COP_X)));
-                dataPt.setCentreOfPressure(1,curs.getDouble(curs.getColumnIndex(KEY_COP_Y)));
+                dataPt.setSensorData(0, curs.getInt(curs.getColumnIndex(KEY_SENSOR_0)));
+                dataPt.setSensorData(1,curs.getInt(curs.getColumnIndex(KEY_SENSOR_1)));
+                dataPt.setSensorData(2,curs.getInt(curs.getColumnIndex(KEY_SENSOR_2)));
+                dataPt.setSensorData(3,curs.getInt(curs.getColumnIndex(KEY_SENSOR_3)));
+                dataPt.setSensorData(4,curs.getInt(curs.getColumnIndex(KEY_SENSOR_4)));
+                dataPt.setSensorData(5,curs.getInt(curs.getColumnIndex(KEY_SENSOR_5)));
+                dataPt.setSensorData(6,curs.getInt(curs.getColumnIndex(KEY_SENSOR_6)));
+                dataPt.setSensorData(7,curs.getInt(curs.getColumnIndex(KEY_SENSOR_7)));
+                dataPt.setCentreOfPressure(0, curs.getInt(curs.getColumnIndex(KEY_COP_X)));
+                dataPt.setCentreOfPressure(1,curs.getInt(curs.getColumnIndex(KEY_COP_Y)));
 
                 dataPts.add(dataPt);
             }while (curs.moveToNext());
