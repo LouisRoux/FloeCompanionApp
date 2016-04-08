@@ -10,6 +10,7 @@ import java.util.List;
 /**
  * Created by Louis on 16/03/2016.
  */
+/*
 public class FloeRunDatabase extends SQLiteOpenHelper
 {
     //Database name and version
@@ -129,3 +130,4 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         //updates the specified table entry with data from dataPt object
     }
 }
+*/

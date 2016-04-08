@@ -18,9 +18,8 @@ public class FloeRecordingAct extends AppCompatActivity {
     //testing fxn
     public void getWeight(View view) {
         //testing stuff; replace with actual thing
-        String test = dataService.Test();
-        TextView testText = (TextView) findViewById(R.id.testText);
-        testText.setText(test);
+
+
     }
 
     @Override

@@ -12,4 +12,18 @@
     tools:context="com.pinnaclebiometrics.floecompanionapp.FloeRunReviewAct"
     tools:showIn="@layout/activity_floe_run_review">
 
+   <com.jjoe64.graphview.GraphView
+       android:layout_width="match_parent"
+       android:layout_height="300dp"
+       android:id="@+id/graph1"
+       />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Review"
+        android:id="@+id/title"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true" />
 </RelativeLayout>

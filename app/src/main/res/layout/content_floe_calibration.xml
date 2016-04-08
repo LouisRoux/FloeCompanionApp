@@ -35,14 +35,4 @@
         android:height="100dp"
         android:onClick="getWeight" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Large Text"
-        android:id="@+id/testText"
-        android:layout_below="@+id/startCal"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="42dp" />
-
 </RelativeLayout>

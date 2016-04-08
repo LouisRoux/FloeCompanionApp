@@ -12,4 +12,30 @@
     tools:context="com.pinnaclebiometrics.floecompanionapp.FloeRTFeedbackAct"
     tools:showIn="@layout/activity_floe_rtfeedback">
 
+    <ImageView
+        android:layout_width="330dp"
+        android:layout_height="330dp"
+        android:id="@+id/RtFbScreen"
+        android:src="@drawable/rect"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
+
+    <ImageView
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:id="@+id/ball"
+        android:src="@drawable/circle1"
+        android:layout_marginLeft="150dp"
+        android:layout_marginTop="250dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Real-Time Feedback!"
+        android:id="@+id/textView2"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="36dp" />
+
 </RelativeLayout>

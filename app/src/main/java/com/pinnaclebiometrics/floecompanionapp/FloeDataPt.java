@@ -1,5 +1,7 @@
 package com.pinnaclebiometrics.floecompanionapp;
 
+import android.util.Log;
+
 /**
  * Created by Louis on 16/03/2016.
  */
@@ -41,6 +43,8 @@ public class FloeDataPt
         else
         {
             //Throw error?
+            Log.d("FloeDataPt","sensorData array incomplete");
+            Log.d("FloeDataPt","CoP array incomplete");
         }
     }
 
