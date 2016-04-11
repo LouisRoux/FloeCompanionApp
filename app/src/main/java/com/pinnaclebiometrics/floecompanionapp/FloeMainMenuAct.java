@@ -20,6 +20,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
         Button rtBtn = (Button) findViewById(R.id.rtBtn);
         Button recBtn = (Button) findViewById(R.id.recBtn);
         Button revBtn = (Button) findViewById(R.id.revBtn);
+        Button graphBtn = (Button) findViewById(R.id.graphBtn);
 
         calBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -51,6 +52,14 @@ public class FloeMainMenuAct extends AppCompatActivity {
             public void onClick(View v) {
                 startActivity(new Intent(FloeMainMenuAct.this, FloeReviewListAct.class));
                 Log.d("FloeMainMenuAct", "Review stuff activity started'");
+            }
+        });
+
+        graphBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(FloeMainMenuAct.this, FloeRunReviewAct.class));
+                Log.d("FloeMainMenuAct", "graph activity started'");
             }
         });
 

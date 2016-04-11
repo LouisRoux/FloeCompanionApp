@@ -15,6 +15,7 @@ public class FloeDataTransmissionSvc extends Service {
 
     FloeBLESvc bleService;
     private final IBinder dataTranBinder = new FloeDTBinder();
+    FloeRunDatabase db;
 
     //constructor
     public FloeDataTransmissionSvc() {
@@ -43,9 +44,10 @@ public class FloeDataTransmissionSvc extends Service {
         int M1R = currentPoint[4];
         int HR = currentPoint[7];
         //TODO: retrieve weight from database to assign
-        int weight = 0;
+        FloeDataPt temp = db.getDataPt(0);
+        int weight = temp.getSensorData(0);
 
-        //TODO: get values for insole distances - relative to 540x425 quadrants
+        //TODO: get values for insole distances - relative to 540x444 quadrants
         Canvas canvas = new Canvas();
         int width = canvas.getWidth();
         int length = canvas.getHeight()/2;

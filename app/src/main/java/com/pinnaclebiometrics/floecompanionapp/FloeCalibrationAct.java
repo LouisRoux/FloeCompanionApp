@@ -14,6 +14,7 @@ import android.content.DialogInterface.OnDismissListener;
 import com.pinnaclebiometrics.floecompanionapp.FloeBLESvc.FloeBLEBinder;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 
 
 public class FloeCalibrationAct extends AppCompatActivity {
@@ -23,6 +24,7 @@ public class FloeCalibrationAct extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_floe_calibration);
         Intent i = new Intent(this, FloeBLESvc.class);
         bindService(i, bleConnection, Context.BIND_AUTO_CREATE);

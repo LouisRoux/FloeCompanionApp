@@ -7,29 +7,19 @@ import android.util.Log;
  */
 public class FloeDataPt
 {
-    private int runID;
-    private int dataPtNum;
-    private int timeStamp;
-    private double[] sensorData;//size 8. starts at 0 for left foot, index increases as numbers in design specs fig 6.5
-    private double[] centreOfPressure;//array of size 2. x-dir is location 0, y-dir is location 1.
+    private long dataPtID;//unique identifier for this data point
+    private long runID;//what run this point belongs to
+    private long dataPtNum;//where in the run this data point goes
+    private long timeStamp;
+    private int[] sensorData = new int[8];//size 8. starts at 0 for left foot, index increases as numbers in design specs fig 6.5
+    private int[] centreOfPressure = new int[2];//array of size 2. x-dir is location 0, y-dir is location 1.
 
     FloeDataPt()
     {
-        //create empty object with all invalid values for attributes? or nothing?
-        /*
-        this.runID=-1;
-        this.dataPtNum=-1;
-        this.timeStamp=-1;
-        for(int i=0; i<8; i++)
-        {
-            this.sensorData[i]=-1;
-        }
-        this.centreOfPressure[0]=0;
-        this.centreOfPressure[1]=0;
-        */
+        //empty constructor
     }
 
-    FloeDataPt(int runID, int dataPtNum, int timeStamp, double[] sensorData, double[] centreOfPressure)
+    FloeDataPt(long runID, int dataPtNum, int timeStamp, int[] sensorData, int[] centreOfPressure)
     {
         //create object using the provided sensor input. Make sure to check array sizes and throw error if appropriate
         if(sensorData.length==8 && centreOfPressure.length==2)
@@ -42,81 +32,96 @@ public class FloeDataPt
         }
         else
         {
-            //Throw error?
-            Log.d("FloeDataPt","sensorData array incomplete");
-            Log.d("FloeDataPt","CoP array incomplete");
+            Log.e("INVALID_ARRAY_LENGTH", "The length of the sensorData or centreOfPressure array passed to the FloeDataPt constructor was invalid");
         }
     }
 
-    public int getRunID()
+    public long getDataPtID()
+    {
+        return dataPtID;
+    }
+
+    public void setDataPtID(long dataPtID)
+    {
+        this.dataPtID = dataPtID;
+    }
+
+
+    public long getRunID()
     {
         return runID;
     }
 
-    public void setRunID(int runID)
+    public void setRunID(long runID)
     {
         this.runID = runID;
     }
 
 
-    public int getDataPtNum()
+    public long getDataPtNum()
     {
         return dataPtNum;
     }
 
-    public void setDataPtNum(int dataPtNum)
+    public void setDataPtNum(long dataPtNum)
     {
         this.dataPtNum = dataPtNum;
     }
 
 
-    public int getTimeStamp()
+    public long getTimeStamp()
     {
         return timeStamp;
     }
 
-    public void setTimeStamp(int timeStamp)
+    public void setTimeStamp(long timeStamp)
     {
         this.timeStamp = timeStamp;
     }
 
 
-    public double[] getSensorData()
+    public int[] getSensorData()
     {
         return sensorData;
     }
 
-    public double getSensorData(int sensorNum)
+    public int getSensorData(int sensorNum)
     {//do we need this method?
         return sensorData[sensorNum];
     }
 
-    public void setSensorData(double[] sensorData)
+    public void setSensorData(int[] sensorData)
     {
-        this.sensorData = sensorData;
+        for(int i=0; i<8; i++)
+        {
+            this.sensorData[i] = sensorData[i];
+        }
     }
 
-    public void setSensorData(int sensorNum, double value)
+    public void setSensorData(int sensorNum, int value)
     {//do we need this method?
         this.sensorData[sensorNum]=value;
     }
 
-    public double[] getCentreOfPressure()
+    public int[] getCentreOfPressure()
     {
         return centreOfPressure;
     }
 
-    public double getCentreOfPressure(int direction)
+    public int getCentreOfPressure(int direction)
     {//do we need this method?
         return centreOfPressure[direction];
     }
 
-    public void setCentreOfPressure(double[] centreOfPressure)
+    public void setCentreOfPressure(int[] centreOfPressure)
     {
-        this.centreOfPressure=centreOfPressure;
+        for(int i=0; i<2; i++)
+        {
+            this.centreOfPressure[i] = centreOfPressure[i];
+        }
     }
 
-    public void setCentreOfPressure(int direction, double value)
+    public void setCentreOfPressure(int direction, int value)
     {//do we need this method?
         this.centreOfPressure[direction]=value;
     }

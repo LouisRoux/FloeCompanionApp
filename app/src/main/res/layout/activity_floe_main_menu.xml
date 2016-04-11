@@ -31,8 +31,7 @@
             android:layout_height="wrap_content"
             android:text="Calibrate Weight"
             android:id="@+id/calBtn"
-            android:layout_marginTop="57dp"
-            android:layout_below="@+id/welcome"
+            android:layout_below="@+id/imageView"
             android:layout_centerHorizontal="true" />
 
         <Button
@@ -59,16 +58,14 @@
             android:layout_below="@+id/recBtn"
             android:layout_centerHorizontal="true" />
 
-        <TextView
+        <ImageView
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Welcome!"
-            android:id="@+id/welcome"
+            android:layout_height="200dp"
+            android:id="@+id/imageView"
+            android:src="@drawable/pblogo"
             android:layout_alignParentTop="true"
-            android:layout_centerHorizontal="true"
-            android:layout_marginTop="90dp"
-            android:typeface="serif" />
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true" />
 
     </RelativeLayout>
 

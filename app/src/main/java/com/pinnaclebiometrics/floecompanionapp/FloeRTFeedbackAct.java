@@ -15,6 +15,8 @@ import android.view.View;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Color;
+import android.view.WindowManager;
+
 import com.pinnaclebiometrics.floecompanionapp.FloeDataTransmissionSvc.FloeDTBinder;
 
 public class FloeRTFeedbackAct extends AppCompatActivity {
@@ -24,12 +26,16 @@ public class FloeRTFeedbackAct extends AppCompatActivity {
     public class RTFeedbackView extends View {
 
         Bitmap ball;
+        Bitmap logo;
+
         int x, y;
 
         public RTFeedbackView(Context context) {
             super(context);
 
             ball = BitmapFactory.decodeResource(getResources(), R.drawable.circle1);
+            logo = BitmapFactory.decodeResource(getResources(), R.drawable.pblogo);
+
             x = 0;
             y = 0;
         }
@@ -77,6 +83,44 @@ public class FloeRTFeedbackAct extends AppCompatActivity {
                 y=0;
             }
             //end test thing
+            Paint red = new Paint();
+            red.setColor(Color.RED);
+            red.setStyle(Paint.Style.STROKE);
+            red.setStrokeWidth(8);
+            Paint yellow = new Paint();
+            yellow.setColor(Color.YELLOW);
+            yellow.setStyle(Paint.Style.STROKE);
+            yellow.setStrokeWidth(3);
+
+            if(x < 270) {
+                canvas.drawLine(150,0,150,canvas.getHeight()/2,yellow);
+            }
+            if(x > 770) {
+                canvas.drawLine(930,0,930,canvas.getHeight()/2,yellow);
+            }
+            if(y < 222) {
+                canvas.drawLine(0,126,1080,126,yellow);
+            }
+            if(y > 626) {
+                canvas.drawLine(0,762,1080,762,yellow);
+            }
+            if(x < 135) {
+                canvas.drawLine(135,0,135,canvas.getHeight()/2,red);
+            }
+            if(x > 905) {
+                canvas.drawLine(945,0,945,canvas.getHeight()/2,red);
+            }
+            if(y < 111) {
+                canvas.drawLine(0,111,1080,111,red);
+            }
+            if(y > 737) {
+                canvas.drawLine(0,777,1080,777,red);
+            }
+
+            int cx = (canvas.getWidth() - logo.getWidth()) >> 1;
+
+
+            canvas.drawBitmap(logo, cx, 950, null);
 
             Paint p = new Paint();
             canvas.drawBitmap(ball, x, y, p);
@@ -87,6 +131,7 @@ public class FloeRTFeedbackAct extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(new RTFeedbackView(this));
         Intent i = new Intent(this, FloeDataTransmissionSvc.class);
         bindService(i, dataConnection, Context.BIND_AUTO_CREATE);
