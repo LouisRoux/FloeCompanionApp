@@ -108,6 +108,7 @@ public class FloeBLESvc extends Service
         {
             super.onConnectionStateChange(gatt, status, newState);
             String intentAction;
+            int deviceNum=0;
 
             if (newState == BluetoothProfile.STATE_CONNECTED)
             {
@@ -115,6 +116,7 @@ public class FloeBLESvc extends Service
 
                 if(gatt.equals(bleGatt1))
                 {
+                    deviceNum=1;
                     if(bleGatt2!=null)
                     {
                         connectionState = STATE_2_CONNECTED;
@@ -122,13 +124,14 @@ public class FloeBLESvc extends Service
                     {
                         connectionState = STATE_1_CONNECTED;
                     }
-                    createBroadcast(intentAction);
+                    createBroadcast(intentAction, deviceNum);
                     Log.i(TAG, "Connected to GATT server 1.");
                     // Attempts to discover services after successful connection.
                     Log.i(TAG, "Attempting to start service discovery:" + bleGatt1.discoverServices());
 
                 }else if(gatt.equals(bleGatt2))
                 {
+                    deviceNum=2;
                     if(bleGatt1!=null)
                     {
                         connectionState = STATE_2_CONNECTED;
@@ -136,7 +139,7 @@ public class FloeBLESvc extends Service
                     {
                         connectionState = STATE_1_CONNECTED;
                     }
-                    createBroadcast(intentAction);
+                    createBroadcast(intentAction, deviceNum);
                     Log.i(TAG, "Connected to GATT server 2.");
                     // Attempts to discover services after successful connection.
                     Log.i(TAG, "Attempting to start service discovery:" + bleGatt2.discoverServices());
@@ -150,19 +153,59 @@ public class FloeBLESvc extends Service
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED)
             {
                 intentAction = ACTION_GATT_DISCONNECTED;
+
                 if(bleGatt1==null && bleGatt2==null)
                 {
                     connectionState = STATE_DISCONNECTED;
                     Log.i(TAG, "Disconnected from last GATT server.");
 
+                    switch(FloeDataTransmissionSvc.getDataTransmissionState())
+                    {
+                        //TODO: modify RTFeedback and Calibration Activities to include isDeviceConnected(), then un-comment
+                        /*case FloeDataTransmissionSvc.STATE_RT_FEEDBACK:
+                            if(FloeRTFeedbackAct.isDeviceConnected(1))
+                            {
+                                deviceNum=1;
+                            }else if(FloeRTFeedbackAct.isDeviceConnected(2))
+                            {
+                                deviceNum=2;
+                            }
+                            break;*/
+
+                        case FloeDataTransmissionSvc.STATE_RECORDING:
+                            if(FloeRecordingAct.isDeviceConnected(1))
+                            {
+                                deviceNum=1;
+                            }else if(FloeRecordingAct.isDeviceConnected(2))
+                            {
+                                deviceNum=2;
+                            }
+                            break;
+
+                        /*case FloeDataTransmissionSvc.STATE_CALIBRATING:
+                            if(FloeCalibrationAct.isDeviceConnected(1))
+                            {
+                                deviceNum=1;
+                            }else if(FloeCalibrationAct.isDeviceConnected(2))
+                            {
+                                deviceNum=2;
+                            }
+                            break;*/
+
+                        default:
+                            break;
+                    }
+
                 }else if(bleGatt1!=null)
                 {
                     connectionState = STATE_1_CONNECTED;
+                    deviceNum=2;
                     Log.i(TAG, "Disconnected from GATT server 2.");
 
                 }else if(bleGatt2!=null)
                 {
                     connectionState = STATE_1_CONNECTED;
+                    deviceNum=1;
                     Log.i(TAG, "Disconnected from GATT server 1.");
 
                 }else
@@ -170,28 +213,31 @@ public class FloeBLESvc extends Service
                     Log.e(TAG, "Disconnected from a GATT server, but bleGatt1 and bleGatt2 still not null");
                 }
 
-                createBroadcast(intentAction);
+                createBroadcast(intentAction, deviceNum);
             }
         }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status)
         {
+            int deviceNum=0;
             if (status == BluetoothGatt.GATT_SUCCESS)
             {
                 if(gatt.equals(bleGatt1))
                 {
                     Log.w(TAG, "bleGatt1 = " + bleGatt1);
+                    deviceNum=1;
 
                 }else if(gatt.equals(bleGatt2))
                 {
                     Log.w(TAG, "bleGatt2 = " + bleGatt2);
+                    deviceNum=2;
 
                 }else
                 {
                     Log.e(TAG, "onServicesDiscovered received GATT_SUCCESS, but bleGatt1 and bleGatt2 are not the discovered service");
                 }
-                createBroadcast(ACTION_GATT_SERVICES_DISCOVERED);
+                createBroadcast(ACTION_GATT_SERVICES_DISCOVERED, deviceNum);
 
             } else
             {
@@ -376,14 +422,14 @@ public class FloeBLESvc extends Service
                 if (RxService == null)
                 {
                     Log.e(TAG, "Rx service not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART);
+                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
                 BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
                 if (RxChar == null)
                 {
                     Log.e(TAG,"Rx characteristic not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART);
+                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
                 RxChar.setValue(value);
@@ -398,14 +444,14 @@ public class FloeBLESvc extends Service
                 if (RxService == null)
                 {
                     Log.e(TAG, "Rx service not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART);
+                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
                 RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
                 if (RxChar == null)
                 {
                     Log.e(TAG,"Rx characteristic not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART);
+                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
                 RxChar.setValue(value);
@@ -429,14 +475,14 @@ public class FloeBLESvc extends Service
                 if (RxService == null)
                 {
                     Log.e(TAG, "Rx service not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART);
+                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
                 BluetoothGattCharacteristic TxChar = RxService.getCharacteristic(TX_CHAR_UUID);
                 if (TxChar == null)
                 {
                     Log.e(TAG, "Tx characteristic not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART);
+                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
                 bleGatt1.setCharacteristicNotification(TxChar,true);
@@ -451,14 +497,14 @@ public class FloeBLESvc extends Service
                 if (RxService == null)
                 {
                     Log.e(TAG, "Rx service not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART);
+                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
                 TxChar = RxService.getCharacteristic(TX_CHAR_UUID);
                 if (TxChar == null)
                 {
                     Log.e(TAG, "Tx characteristic not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART);
+                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
                 bleGatt2.setCharacteristicNotification(TxChar,true);
@@ -526,10 +572,11 @@ public class FloeBLESvc extends Service
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
-    private void createBroadcast(final String action)
+    private void createBroadcast(final String action, int deviceNum)
     {
         final Intent intent = new Intent(action);
-        Log.d(TAG, "Sending broadcast " + action);
+        intent.putExtra(EXTRA_DATA, deviceNum);
+        Log.d(TAG, "Sending broadcast " + action +", device "+ deviceNum);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 }

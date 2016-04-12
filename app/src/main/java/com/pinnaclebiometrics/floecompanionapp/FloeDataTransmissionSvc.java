@@ -31,7 +31,7 @@ public class FloeDataTransmissionSvc extends Service
 
 
     //dataTransmissionState is used to keep track of what to do with incoming data
-    private int dataTransmissionState = 0;
+    private static int dataTransmissionState = 0;
 
     private boolean newRun = true;
     private int[] sensorData = new int[8];//array to store sensor data temporarily
@@ -248,6 +248,11 @@ public class FloeDataTransmissionSvc extends Service
     {
         //used by the activity that launches this service to indicate what mode of operation to use
         dataTransmissionState = state;
+    }
+
+    public static int getDataTransmissionState()
+    {
+        return dataTransmissionState;
     }
 
     private IntentFilter makeBLEIntentFilter()

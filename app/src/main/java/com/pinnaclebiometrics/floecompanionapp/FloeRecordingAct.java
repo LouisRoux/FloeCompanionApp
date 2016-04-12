@@ -50,7 +50,8 @@ public class FloeRecordingAct extends AppCompatActivity
     private BluetoothAdapter bleAdapter = bleManager.getAdapter();
     private BluetoothDevice bleDevice1 = null;
     private BluetoothDevice bleDevice2 = null;
-
+    private static boolean bleDevice1Connected = false;
+    private static boolean bleDevice2Connected = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -179,11 +180,13 @@ public class FloeRecordingAct extends AppCompatActivity
                         bleDevice1 = bleAdapter.getRemoteDevice(deviceAddress);
                         Log.d(TAG, "... onActivityResultdevice.address==" + bleDevice1 + " bleserviceValue" + bleService);
                         bleService.connect(deviceAddress, 1);
+
                     }else if(bleDevice2==null)
                     {
                         bleDevice2 = bleAdapter.getRemoteDevice(deviceAddress);
                         Log.d(TAG, "... onActivityResultdevice.address==" + bleDevice2 + " bleserviceValue" + bleService);
                         bleService.connect(deviceAddress, 2);
+
                     }else
                     {
                         Log.e(TAG, "Both devices supposedly already connected, why has this been called 3 times?");
@@ -254,7 +257,22 @@ public class FloeRecordingAct extends AppCompatActivity
 
             if(action.equals(FloeBLESvc.ACTION_GATT_CONNECTED))
             {
-                Log.d(TAG, "Received broadcast ACTION_GATT_CONNECTED");
+                Log.d(TAG, "Received broadcast ACTION_GATT_CONNECTED, device " + deviceNum);
+                switch(deviceNum)
+                {
+                    case 1:
+                        bleDevice1Connected=true;
+                        break;
+
+                    case 2:
+                        bleDevice2Connected=true;
+                        break;
+
+                    default:
+                        Log.e(TAG, "Invalid device number: " + deviceNum);
+                        break;
+                }
+
                 if (bleDevice1 != null && bleDevice2 != null)
                 {
                     state = UART_PROFILE_2_CONNECTED;
@@ -268,7 +286,7 @@ public class FloeRecordingAct extends AppCompatActivity
 
             }else if(action.equals(FloeBLESvc.ACTION_GATT_DISCONNECTED))
             {
-                Log.d(TAG, "Received broadcast ACTION_GATT_DISCONNECTED");
+                Log.d(TAG, "Received broadcast ACTION_GATT_DISCONNECTED, device " + deviceNum);
                 if (bleDevice1 != null || bleDevice2 != null)
                 {
                     state = UART_PROFILE_1_CONNECTED;
@@ -282,6 +300,21 @@ public class FloeRecordingAct extends AppCompatActivity
                     Log.e(TAG, "More than one device connected despite just receiving ACTION_GATT_DISCONNECTED");
                 }
 
+                switch(deviceNum)
+                {
+                    case 1:
+                        bleDevice1Connected=false;
+                        break;
+
+                    case 2:
+                        bleDevice2Connected=false;
+                        break;
+
+                    default:
+                        Log.e(TAG, "Invalid device number: " + deviceNum);
+                        break;
+                }
+
             }else if(action.equals(FloeBLESvc.ACTION_GATT_SERVICES_DISCOVERED))
             {
                 Log.d(TAG, "Received broadcast ACTION_GATT_SERVICES_DISCOVERED");
@@ -292,6 +325,20 @@ public class FloeRecordingAct extends AppCompatActivity
                 Log.d(TAG, "Received broadcast DEVICE_DOES_NOT_SUPPORT_UART");
                 showMessage("Device doesn't support UART. Disconnecting.");
                 bleService.disconnect(deviceNum);
+                switch(deviceNum)
+                {
+                    case 1:
+                        bleDevice1Connected=false;
+                        break;
+
+                    case 2:
+                        bleDevice2Connected=false;
+                        break;
+
+                    default:
+                        Log.e(TAG, "Invalid device number: " + deviceNum);
+                        break;
+                }
 
             }else
             {
@@ -371,6 +418,20 @@ public class FloeRecordingAct extends AppCompatActivity
     private void showMessage(String msg)
     {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+    }
+
+    public static boolean isDeviceConnected(int deviceNum)
+    {
+        switch(deviceNum)
+        {
+            case 1:
+                return bleDevice1Connected;
+            case 2:
+                return bleDevice2Connected;
+            default:
+                Log.e(TAG, "Invalid device number passed to isDeviceConnected()");
+                return false;
+        }
     }
 }
 //TODO: note down in journal: 1 April studied Android-nRF-UART app by Nordic to figure out stuff about BLE
