@@ -83,7 +83,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(KEY_RUN_ID, newRun.getRunID());
+        //values.put(KEY_RUN_ID, newRun.getRunID());
         values.put(KEY_RUN_TIME, newRun.getRunTime());
         values.put(KEY_RUN_NAME, newRun.getRunName());
         values.put(KEY_RUN_DURATION, newRun.getRunDuration());
@@ -153,20 +153,11 @@ public class FloeRunDatabase extends SQLiteOpenHelper
     {
         //deletes the run whose ID is passed, including all associated data points
         SQLiteDatabase db = this.getWritableDatabase();
-        String selectQuery = "SELECT  * FROM "+TABLE_DATA_PTS+" WHERE "+KEY_RUN_ID+" = "+runID;
 
-        Log.e("deleteRun sent dbQuery", selectQuery);
-
-        Cursor curs = db.rawQuery(selectQuery, null);
-
-        //looping trough all rows and deleting data points
-        if(curs.moveToFirst())
+        List<FloeDataPt> runDataPts = getRunDataPts(runID);
+        for(FloeDataPt dataPt:runDataPts)
         {
-            do
-            {
-                long dataPtID = curs.getLong(curs.getColumnIndex(KEY_RUN_ID));
-                db.delete(TABLE_DATA_PTS, KEY_DATA_PT_ID + " = ?", new String[] {String.valueOf(dataPtID)});
-            }while (curs.moveToNext());
+            deleteDataPt(dataPt.getDataPtID());
         }
 
         db.delete(TABLE_RUNS, KEY_RUN_ID + " = ?", new String[]{String.valueOf(runID)});
@@ -180,7 +171,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
-        values.put(KEY_RUN_ID, run.getRunID());
+        //values.put(KEY_RUN_ID, run.getRunID());
         values.put(KEY_RUN_TIME, run.getRunTime());
         values.put(KEY_RUN_NAME, run.getRunName());
         values.put(KEY_RUN_DURATION, run.getRunDuration());
@@ -196,7 +187,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         long dataPtID;
 
         ContentValues values = new ContentValues();
-        values.put(KEY_DATA_PT_ID, dataPt.getDataPtID());
+        //values.put(KEY_DATA_PT_ID, dataPt.getDataPtID());
         values.put(KEY_RUN_ID, dataPt.getRunID());
         values.put(KEY_DATA_PT_NUM, dataPt.getDataPtNum());
         values.put(KEY_TIMESTAMP, dataPt.getTimeStamp());
@@ -256,7 +247,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         List<FloeDataPt> dataPts = new ArrayList<FloeDataPt>();
 
         // The following statement stores into selectQuery the following string: SELECT * FROM data_Pts tdp, runs tr WHERE tdp.run_ID = ‘[runID]’ AND tr.run_ID = tdp.run_id
-        String selectQuery = "SELECT * FROM "+TABLE_DATA_PTS+" tdp, "+TABLE_RUNS+" tr WHERE tdp."+KEY_RUN_ID+" = /'"+runID+"/' AND tr."+KEY_RUN_ID+" = tdp."+KEY_RUN_ID;
+        String selectQuery = "SELECT * FROM "+TABLE_DATA_PTS+" tdp, "+TABLE_RUNS+" tr WHERE tdp."+KEY_RUN_ID+" = '"+runID+"' AND tr."+KEY_RUN_ID+" = tdp."+KEY_RUN_ID;
 
         Log.d("getRunDataPts", selectQuery);
 
@@ -305,7 +296,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
-        values.put(KEY_DATA_PT_ID, dataPt.getDataPtID());
+        //values.put(KEY_DATA_PT_ID, dataPt.getDataPtID());
         values.put(KEY_RUN_ID, dataPt.getRunID());
         values.put(KEY_DATA_PT_NUM, dataPt.getDataPtNum());
         values.put(KEY_TIMESTAMP, dataPt.getTimeStamp());
