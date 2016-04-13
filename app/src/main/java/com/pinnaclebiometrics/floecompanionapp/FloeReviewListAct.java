@@ -32,7 +32,7 @@ public class FloeReviewListAct extends AppCompatActivity {
 //test
         //db.deleteRun(1);
 
-        FloeRun testRun = new FloeRun(1, 1);
+        FloeRun testRun = new FloeRun();
         testRun.setRunDuration(0);
         db.createRun(testRun);
         Log.w("FloeRunReviewAct", "testRun added to db");

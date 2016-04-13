@@ -171,7 +171,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
-        values.put(KEY_RUN_ID, run.getRunID());
+        //values.put(KEY_RUN_ID, run.getRunID());
         values.put(KEY_RUN_TIME, run.getRunTime());
         values.put(KEY_RUN_NAME, run.getRunName());
         values.put(KEY_RUN_DURATION, run.getRunDuration());
@@ -297,7 +297,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
-        values.put(KEY_DATA_PT_ID, dataPt.getDataPtID());
+        //values.put(KEY_DATA_PT_ID, dataPt.getDataPtID());
         values.put(KEY_RUN_ID, dataPt.getRunID());
         values.put(KEY_DATA_PT_NUM, dataPt.getDataPtNum());
         values.put(KEY_TIMESTAMP, dataPt.getTimeStamp());

@@ -19,12 +19,13 @@ public class FloeRun
         //empty constructor
     }
 
-    FloeRun(int runID, int runTime)
+    FloeRun(long runTime)
     {
         //initialize object with provided data. generate name from timestamp, wait until end of run for duration
-        setRunID(runID);
+        //setRunID(runID);
         setRunTime(runTime);
         setRunName(generateRunName());
+        setRunDuration(-1);
     }
 
     public long getRunID()
