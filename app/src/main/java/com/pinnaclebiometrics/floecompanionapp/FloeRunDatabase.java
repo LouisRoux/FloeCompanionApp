@@ -62,9 +62,9 @@ public class FloeRunDatabase extends SQLiteOpenHelper
     @Override
     public void onCreate(SQLiteDatabase dataBase)
     {
-        //Create tables
-        dataBase.execSQL(CREATE_TABLE_RUNS);
-        dataBase.execSQL(CREATE_TABLE_DATA_PTS);
+            //Create tables
+            dataBase.execSQL(CREATE_TABLE_RUNS);
+            dataBase.execSQL(CREATE_TABLE_DATA_PTS);
     }
 
     @Override
@@ -84,10 +84,11 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        //values.put(KEY_RUN_ID, newRun.getRunID());
+
         values.put(KEY_RUN_TIME, newRun.getRunTime());
         values.put(KEY_RUN_NAME, newRun.getRunName());
         values.put(KEY_RUN_DURATION, newRun.getRunDuration());
+
 
         return db.insert(TABLE_RUNS, null, values);
     }
@@ -161,6 +162,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         }
 
         db.delete(TABLE_RUNS, KEY_RUN_ID + " = ?", new String[]{String.valueOf(runID)});
+
     }
 
     public int updateRun(FloeRun run)
@@ -177,7 +179,6 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         return db.update(TABLE_RUNS, values, KEY_RUN_ID+" = ?", new String[] {String.valueOf(run.getRunID())});
     }
 
-
     public long createDataPt(FloeDataPt dataPt)
     {
         //creates new entry in DataPt table
@@ -185,7 +186,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         long dataPtID;
 
         ContentValues values = new ContentValues();
-        //values.put(KEY_DATA_PT_ID, dataPt.getDataPtID());
+
         values.put(KEY_RUN_ID, dataPt.getRunID());
         values.put(KEY_DATA_PT_NUM, dataPt.getDataPtNum());
         values.put(KEY_TIMESTAMP, dataPt.getTimeStamp());
@@ -245,7 +246,9 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         List<FloeDataPt> dataPts = new ArrayList<FloeDataPt>();
 
         // The following statement stores into selectQuery the following string: SELECT * FROM data_Pts tdp, runs tr WHERE tdp.run_ID = ‘[runID]’ AND tr.run_ID = tdp.run_id
+
         String selectQuery = "SELECT * FROM "+TABLE_DATA_PTS+" tdp, "+TABLE_RUNS+" tr WHERE tdp."+KEY_RUN_ID+" = '"+runID+"' AND tr."+KEY_RUN_ID+" = tdp."+KEY_RUN_ID;
+
 
         Log.d("getRunDataPts", selectQuery);
 

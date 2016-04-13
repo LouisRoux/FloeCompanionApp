@@ -22,6 +22,7 @@ import com.pinnaclebiometrics.floecompanionapp.FloeDataTransmissionSvc.FloeDTBin
 public class FloeRTFeedbackAct extends AppCompatActivity {
 
     FloeDataTransmissionSvc dataService;
+    private boolean DTSvcBound = false;
 
     public class RTFeedbackView extends View {
 
@@ -136,6 +137,15 @@ public class FloeRTFeedbackAct extends AppCompatActivity {
         Intent i = new Intent(this, FloeDataTransmissionSvc.class);
         bindService(i, dataConnection, Context.BIND_AUTO_CREATE);
 
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        //This makes sure to unbind the bleSvc to avoid leaking a ServiceConnection
+        //TODO: make sure every bound service gets unbound when its client stops
+        dataService.unbindService(dataConnection);
+        DTSvcBound = false;
     }
 
     private ServiceConnection dataConnection = new ServiceConnection() {

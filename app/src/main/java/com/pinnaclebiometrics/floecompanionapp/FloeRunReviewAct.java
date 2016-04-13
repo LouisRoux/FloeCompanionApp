@@ -24,6 +24,7 @@ public class FloeRunReviewAct extends AppCompatActivity {
         addEntries();
         graph1.addSeries(series);
 
+
     }
 
     private void addEntries(){
@@ -49,19 +50,18 @@ public class FloeRunReviewAct extends AppCompatActivity {
             @Override
             public void run() {
                 //test stuff
-                db.deleteRun(1);
+                db.deleteRun(5);
 
-                FloeRun testRun = new FloeRun(1, 1);
+                FloeRun testRun = new FloeRun(5,1);
                 testRun.setRunDuration(0);
+                testRun.setRunName("Marshmallow");
                 db.createRun(testRun);
-                Log.w("FloeRunReviewAct", "testRun added to db");
+                Log.w("FloeRunReviewAct", "testRun "+testRun.getRunID()+ " added to db");
 
-                for (int i = 0; i < 300; i++){
+                for (int i = 0; i < 100; i++){
                     int j[] = {-i,i};
-                    Log.w("FloeRunReviewAct", "j array initiated");
                     int k[] = {1, 1, 1, 1, 1, 1, 1, 1};
-                    Log.w("FloeRunReviewAct", "k array initiated");
-                    FloeDataPt testPt = new FloeDataPt(testRun.getRunID(),i,i, k, j);
+                    FloeDataPt testPt = new FloeDataPt(5,i,i, k, j);
                     db.createDataPt(testPt);
                     Log.w("FloeRunReviewAct", "testPt "+i+" added to db");
                 }
@@ -69,7 +69,7 @@ public class FloeRunReviewAct extends AppCompatActivity {
                 //end test stuff
 
                 //TODO: change parameter in getRunDataPts
-                List<FloeDataPt> currentRun = db.getRunDataPts(1);
+                List<FloeDataPt> currentRun = db.getRunDataPts(5);
 
                 for (int i = 0; i < currentRun.size(); i++){
                     FloeDataPt currentPt = currentRun.get(i);
@@ -82,6 +82,7 @@ public class FloeRunReviewAct extends AppCompatActivity {
                     });
                 }
                 dialog.dismiss();
+                Log.w("RunReviewAct", "series on graph ended with " + series.getHighestValueX());
             }
         };
 
