@@ -22,8 +22,6 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.pinnaclebiometrics.floecompanionapp.FloeDataTransmissionSvc.FloeDTBinder;
-
 public class FloeRecordingAct extends AppCompatActivity
 {
     public static final String TAG = "FloeRecordingAct";
@@ -50,19 +48,10 @@ public class FloeRecordingAct extends AppCompatActivity
     private BluetoothAdapter bleAdapter = bleManager.getAdapter();
     private BluetoothDevice bleDevice1 = null;
     private BluetoothDevice bleDevice2 = null;
-<<<<<<< HEAD
 
-/*
-    //testing fxn
-    public void getWeight(View view) {
-        //testing stuff; replace with actual thing
-
-
-    }
-=======
     private static boolean bleDevice1Connected = false;
     private static boolean bleDevice2Connected = false;
->>>>>>> origin/master
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -403,9 +392,6 @@ public class FloeRecordingAct extends AppCompatActivity
 
         }
     };
-<<<<<<< HEAD
-    */
-=======
 
     private ServiceConnection bleConnection = new ServiceConnection()
     {
@@ -447,7 +433,6 @@ public class FloeRecordingAct extends AppCompatActivity
                 return false;
         }
     }
->>>>>>> origin/master
 }
 //TODO: note down in journal: 1 April studied Android-nRF-UART app by Nordic to figure out stuff about BLE
 //TODO: make sure to avoid leaking ServiceConnections

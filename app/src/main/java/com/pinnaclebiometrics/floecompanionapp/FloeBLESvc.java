@@ -17,18 +17,15 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-<<<<<<< HEAD
-
-
-public class FloeBLESvc extends Service {
+/*public class FloeBLESvc extends Service {
 
     private final IBinder bleBinder = new FloeBLEBinder();
- /*   private boolean devicesTethered = false;
+    private boolean devicesTethered = false;
 
     final private BluetoothManager bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
     private BluetoothAdapter bleAdapter = bleManager.getAdapter();
 */
-=======
+
 import java.util.UUID;
 
 public class FloeBLESvc extends Service
@@ -69,7 +66,6 @@ public class FloeBLESvc extends Service
     private String bleDevice2Address = null;
     private BluetoothGatt bleGatt2 = null;
 
->>>>>>> origin/master
     public FloeBLESvc()
     {
         //empty constructor
@@ -82,13 +78,13 @@ public class FloeBLESvc extends Service
         return bleBinder;
     }
 
-<<<<<<< HEAD
-
     //testing fxn
-    public String Test() {
+    public String Test()
+    {
         String s = "it works!";
         return s;
-=======
+    }
+
     @Override
     public boolean onUnbind(Intent intent)
     {
@@ -112,22 +108,13 @@ public class FloeBLESvc extends Service
 
     }
 
-    public class FloeBLEBinder extends Binder
+    public int Linearize(int v)
     {
-        FloeBLESvc getService()
-        {
-            return FloeBLESvc.this;
-        }
->>>>>>> origin/master
-    }
-
-    public int Linearize(int v){
         double r2 = 10000;
         //TODO: input voltage value?
         double inputVoltage = 3;
         double exponent = 1/0.9;
 
-<<<<<<< HEAD
         return (int) Math.pow((inputVoltage/v - 1)*r2, exponent);
     }
 
@@ -144,12 +131,14 @@ public class FloeBLESvc extends Service
         return point;
     }
 
-    public class FloeBLEBinder extends Binder {
+    public class FloeBLEBinder extends Binder
+    {
         FloeBLESvc getService()
         {
             return FloeBLESvc.this;
         }
-=======
+    }
+
     private final BluetoothGattCallback bleGattCallback = new BluetoothGattCallback()
     {
         @Override
@@ -300,8 +289,8 @@ public class FloeBLESvc extends Service
             if (status == BluetoothGatt.GATT_SUCCESS)
             {
                 createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
-                //TODO: see if we need to add more here
-                //probably not since dataTransmissionSvc does all the data unpacking
+                //TODO: see if we need to add more here. If we want to unpack the data in BLESvc, this is where to put it
+                //Then, we could implement get functions to retrieve data when needed by activity/DTSvc
             }
         }
 
@@ -627,7 +616,6 @@ public class FloeBLESvc extends Service
         intent.putExtra(EXTRA_DATA, deviceNum);
         Log.d(TAG, "Sending broadcast " + action +", device "+ deviceNum);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
->>>>>>> origin/master
     }
 
 }

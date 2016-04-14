@@ -10,13 +10,10 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Binder;
-<<<<<<< HEAD
 import android.graphics.Canvas;
-=======
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
->>>>>>> origin/master
 import com.pinnaclebiometrics.floecompanionapp.FloeBLESvc.FloeBLEBinder;
 
 
@@ -52,29 +49,21 @@ public class FloeDataTransmissionSvc extends Service
         //empty
     }
 
-<<<<<<< HEAD
-    //fxn to prep data for storage
-    public FloeDataPt makeDataPt() {
-        FloeDataPt currentPt = new FloeDataPt();
-
-        return currentPt;
-    }
-
     //fxn to calculate CoP
     public int[] getCoP() {
         int CoPx = 0;
         int CoPy = 0;
 
         //assigning sensor values
-        int[] currentPoint = bleService.getPoint();
-        int BL = currentPoint[1];
-        int M5L = currentPoint[2];
-        int M1L = currentPoint[0];
-        int HL = currentPoint[3];
-        int BR = currentPoint[5];
-        int M5R = currentPoint[6];
-        int M1R = currentPoint[4];
-        int HR = currentPoint[7];
+        int BL = sensorData[1];
+        int M5L = sensorData[2];
+        int M1L = sensorData[0];
+        int HL = sensorData[3];
+        int BR = sensorData[5];
+        int M5R = sensorData[6];
+        int M1R = sensorData[4];
+        int HR = sensorData[7];
+
         //TODO: retrieve weight from database to assign
         FloeDataPt temp = db.getDataPt(0);
         int weight = temp.getSensorData(0);
@@ -98,7 +87,7 @@ public class FloeDataTransmissionSvc extends Service
         int[] CoP = {CoPx, CoPy};
         return CoP;
     }
-=======
+
     //TODO: figure out how to sequentially read from each boot
 
     private final BroadcastReceiver BLEBroadcastReceiver = new BroadcastReceiver()
@@ -113,6 +102,7 @@ public class FloeDataTransmissionSvc extends Service
                 Log.d(TAG, "Received broadcast ACTION_DATA_AVAILABLE");
                 final byte[] txValue = intent.getByteArrayExtra(FloeBLESvc.EXTRA_DATA);
 
+                //TODO: split this into a function, perhaps merge with linearize()
                 //TODO: verify the data-extracting function works
                 byte[] dataBytes = {0,0,0,0};
                 int sensorValue;
@@ -121,18 +111,19 @@ public class FloeDataTransmissionSvc extends Service
                 if(txValue[0] == (byte) 0x4C)
                 {
                     //data received from left BMH
-                    baseIndex=1;
+                    baseIndex=0;
                     Log.d(TAG, "Received data from left BMH");
                 }else if(txValue[0] == (byte) 0x52)
                 {
                     //Data received from right BMH
-                    baseIndex=5;
+                    baseIndex=4;
                     Log.d(TAG, "Received data from right BMH");
                 }else
                 {
                     //Invalid header
                     Log.e(TAG, "Invalid header code");
                 }
+
 
                 for(int j=1;j<5;j++)
                 {
@@ -145,7 +136,7 @@ public class FloeDataTransmissionSvc extends Service
                         int shift = (4 - 1 - i) * 8;
                         sensorValue += (dataBytes[i] & 0x000000FF) << shift;
                     }
-                    sensorData[baseIndex+j-1]=sensorValue;
+                    sensorData[baseIndex+j]=sensorValue;
                     Log.i(TAG, "Unpacked data from sensor " + (baseIndex+j-1) + ". value = " + sensorValue);
                 }
 
@@ -162,13 +153,13 @@ public class FloeDataTransmissionSvc extends Service
                     {
                         case STATE_RT_FEEDBACK:
                             Log.d(TAG, "performing operation for STATE_RT_FEEDBACK");
-                            calcCoP();
+                            centreOfPressure = getCoP();
                             //send out broadcast using NEW_COP_AVAILABLE
                             createBroadcast(NEW_COP_AVAILABLE, centreOfPressure);
                             break;
                         case STATE_RECORDING:
                             Log.d(TAG, "performing operation for STATE_RECORDING");
-                            calcCoP();
+                            centreOfPressure = getCoP();
                             //Create dataPt object to send to Recording activity
                             FloeDataPt dataPt = new FloeDataPt(System.currentTimeMillis(), sensorData, centreOfPressure);
 
@@ -203,12 +194,6 @@ public class FloeDataTransmissionSvc extends Service
         }
     };
 
-
-    private void calcCoP()
-    {
-        //TODO: write CoP calculation
-    }
-
     private void createBroadcast(final String action, final int[] arrayOfData)
     {
         //This function sends out a broadcast with an int array of the sensor values or CoP, for the Calibrating or RTFeedback activity
@@ -235,8 +220,6 @@ public class FloeDataTransmissionSvc extends Service
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
->>>>>>> origin/master
-
     //set up to be bound
     @Override
     public IBinder onBind(Intent intent)
@@ -249,17 +232,11 @@ public class FloeDataTransmissionSvc extends Service
     public void onCreate()
     {
         Intent i = new Intent(this, FloeBLESvc.class);
-<<<<<<< HEAD
-        //bindService(i, bleConnection, Context.BIND_AUTO_CREATE);
-    }
-
-=======
         bindService(i, bleConnection, Context.BIND_AUTO_CREATE);
 
         LocalBroadcastManager.getInstance(this).registerReceiver(BLEBroadcastReceiver, makeBLEIntentFilter());
     }
 
->>>>>>> origin/master
     @Override
     public void onDestroy()
     {
@@ -273,13 +250,10 @@ public class FloeDataTransmissionSvc extends Service
             Log.e(TAG, ignore.toString());
         }
         //This makes sure to unbind the bleSvc to avoid leaking a ServiceConnection
-<<<<<<< HEAD
         //TODO: make sure every bound service gets unbound when its client stops
         bleService.unbindService(bleConnection);
         bleSvcBound = false;
-=======
         unbindService(bleConnection);
->>>>>>> origin/master
     }
 
     // create binder

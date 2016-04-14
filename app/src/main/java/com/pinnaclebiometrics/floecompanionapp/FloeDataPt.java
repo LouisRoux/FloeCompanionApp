@@ -13,10 +13,7 @@ public class FloeDataPt implements Parcelable
     private long runID;//what run this point belongs to
     private long dataPtNum;//where in the run this data point goes
     private long timeStamp;
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/master
     private int[] sensorData = new int[8];//size 8. starts at 0 for left foot, index increases as numbers in design specs fig 6.5
     private int[] centreOfPressure = new int[2];//array of size 2. x-dir is location 0, y-dir is location 1.
 
@@ -25,11 +22,14 @@ public class FloeDataPt implements Parcelable
         //empty constructor
     }
 
-<<<<<<< HEAD
+
     FloeDataPt(long runID, int dataPtNum, int timeStamp, int[] sensorData, int[] centreOfPressure)
-=======
+    {
+        //TODO: implement this if we need it
+    }
+
+
     FloeDataPt(long timeStamp, int[] sensorData, int[] centreOfPressure)
->>>>>>> origin/master
     {
         //create object using the provided sensor input. Make sure to check array sizes and throw error if appropriate
         if(sensorData.length==8 && centreOfPressure.length==2)
@@ -58,7 +58,7 @@ public class FloeDataPt implements Parcelable
         centreOfPressure = in.createIntArray();
     }
 
-    //Functions that allow FloeDataPt to be Parceleable
+    //Functions that allow FloeDataPt to be Parcelable
     @Override
     public void writeToParcel(Parcel dest, int flags)
     {
