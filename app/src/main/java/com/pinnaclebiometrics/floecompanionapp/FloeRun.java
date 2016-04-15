@@ -80,4 +80,9 @@ public class FloeRun
 
         return newName;
     }
+
+    @Override
+    public String toString() {
+        return runName;
+    }
 }

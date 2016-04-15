@@ -12,12 +12,4 @@
     tools:context="com.pinnaclebiometrics.floecompanionapp.FloeMainMenuAct"
     tools:showIn="@layout/activity_floe_main_menu">
 
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="test graph!"
-        android:id="@+id/graphBtn"
-        android:layout_marginBottom="34dp"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true" />
 </RelativeLayout>

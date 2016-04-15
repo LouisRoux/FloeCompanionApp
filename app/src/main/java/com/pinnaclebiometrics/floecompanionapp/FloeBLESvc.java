@@ -16,16 +16,6 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-
-/*public class FloeBLESvc extends Service {
-
-    private final IBinder bleBinder = new FloeBLEBinder();
-    private boolean devicesTethered = false;
-
-    final private BluetoothManager bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-    private BluetoothAdapter bleAdapter = bleManager.getAdapter();
-*/
-
 import java.util.UUID;
 
 public class FloeBLESvc extends Service
@@ -78,13 +68,6 @@ public class FloeBLESvc extends Service
         return bleBinder;
     }
 
-    //testing fxn
-    public String Test()
-    {
-        String s = "it works!";
-        return s;
-    }
-
     @Override
     public boolean onUnbind(Intent intent)
     {
@@ -108,8 +91,15 @@ public class FloeBLESvc extends Service
 
     }
 
-    public int Linearize(int v)
+    public class FloeBLEBinder extends Binder
     {
+        FloeBLESvc getService()
+        {
+            return FloeBLESvc.this;
+        }
+    }
+
+    public int Linearize(int v){
         double r2 = 10000;
         //TODO: input voltage value?
         double inputVoltage = 3;
@@ -129,14 +119,6 @@ public class FloeBLESvc extends Service
         point[6] = ;
         point[7] = ;*/
         return point;
-    }
-
-    public class FloeBLEBinder extends Binder
-    {
-        FloeBLESvc getService()
-        {
-            return FloeBLESvc.this;
-        }
     }
 
     private final BluetoothGattCallback bleGattCallback = new BluetoothGattCallback()
@@ -210,7 +192,7 @@ public class FloeBLESvc extends Service
                             }
                             break;*/
 
-                        case FloeDataTransmissionSvc.STATE_RECORDING:
+                        /*case FloeDataTransmissionSvc.STATE_RECORDING:
                             if(FloeRecordingAct.isDeviceConnected(1))
                             {
                                 deviceNum=1;
@@ -218,7 +200,7 @@ public class FloeBLESvc extends Service
                             {
                                 deviceNum=2;
                             }
-                            break;
+                            break;*/
 
                         /*case FloeDataTransmissionSvc.STATE_CALIBRATING:
                             if(FloeCalibrationAct.isDeviceConnected(1))
@@ -289,8 +271,8 @@ public class FloeBLESvc extends Service
             if (status == BluetoothGatt.GATT_SUCCESS)
             {
                 createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
-                //TODO: see if we need to add more here. If we want to unpack the data in BLESvc, this is where to put it
-                //Then, we could implement get functions to retrieve data when needed by activity/DTSvc
+                //TODO: see if we need to add more here
+                //probably not since dataTransmissionSvc does all the data unpacking
             }
         }
 
@@ -314,8 +296,7 @@ public class FloeBLESvc extends Service
         }
 
         bleAdapter = bleManager.getAdapter();
-        if (bleAdapter == null)
-        {
+        if (bleAdapter == null) {
             Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
             return false;
         }
@@ -325,6 +306,7 @@ public class FloeBLESvc extends Service
 
     public boolean connect(String address, int deviceNum)
     {
+        Log.d(TAG, "connect(address " + address + ", deviceNum " + deviceNum + ")");
         if (bleAdapter == null || address == null)
         {
             Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
@@ -356,9 +338,11 @@ public class FloeBLESvc extends Service
                 }
 
                 // We want to directly connect to the device, so we are setting the autoConnect parameter to false.
-                bleGatt1 = device.connectGatt(this, false, bleGattCallback);
                 Log.d(TAG, "Trying to create a new connection for bleGatt1.");
+                bleGatt1 = device.connectGatt(this, false, bleGattCallback);
+                Log.d(TAG, "bleGatt1 = " + bleGatt1);
                 bleDevice1Address = address;
+                Log.d(TAG, "bleDevice1Address = " + bleDevice1Address);
                 connectionState = STATE_CONNECTING;
                 return true;
 
@@ -456,7 +440,7 @@ public class FloeBLESvc extends Service
         {
             case 1:
                 BluetoothGattService RxService = bleGatt1.getService(RX_SERVICE_UUID);
-                Log.e(TAG, "bleGatt1 null" + bleGatt1);
+                Log.e(TAG, "bleGatt1 null " + bleGatt1);
                 if (RxService == null)
                 {
                     Log.e(TAG, "Rx service not found!");
@@ -523,11 +507,19 @@ public class FloeBLESvc extends Service
                     createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
-                bleGatt1.setCharacteristicNotification(TxChar,true);
+                bleGatt1.setCharacteristicNotification(TxChar, true);
 
                 BluetoothGattDescriptor descriptor = TxChar.getDescriptor(CCCD);
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 bleGatt1.writeDescriptor(descriptor);
+
+                //check if both devices are ready, then send the order to start transmission
+                if(bleGatt1!=null && bleGatt2 != null)
+                {
+                    //TODO: make sure this is in the right place
+                    startDataTransfer();
+                }
+
                 break;
 
             case 2:
@@ -550,12 +542,31 @@ public class FloeBLESvc extends Service
                 descriptor = TxChar.getDescriptor(CCCD);
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 bleGatt2.writeDescriptor(descriptor);
+
+                //check if both devices are ready, then send the order to start transmission
+                if(bleGatt1!=null && bleGatt2 != null)
+                {
+                    //TODO: make sure this is in the right place
+                    startDataTransfer();
+                }
+
                 break;
 
             default:
                 Log.e(TAG, "Invalid device number passed to enableTXNotification()");
                 break;
         }
+    }
+
+    private void startDataTransfer()
+    {
+        //This function sends the expected values to tell the boards to start transmitting data
+        byte[] value = "R00E00000".getBytes();//enable right boot
+        Log.d(TAG, "writeRXCharacteristic (value R00E00000, deviceNum 1)");
+        writeRXCharacteristic(value, 1);
+        //TODO: uncomment following operations when second board is ready
+        // value = "L00E00000".getBytes();//enable left boot
+        writeRXCharacteristic(value, 2);
     }
 
     public void readCharacteristic(BluetoothGattCharacteristic characteristic, int deviceNum)
@@ -616,6 +627,7 @@ public class FloeBLESvc extends Service
         intent.putExtra(EXTRA_DATA, deviceNum);
         Log.d(TAG, "Sending broadcast " + action +", device "+ deviceNum);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
     }
 
 }

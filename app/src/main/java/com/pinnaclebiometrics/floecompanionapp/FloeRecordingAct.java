@@ -22,6 +22,8 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.pinnaclebiometrics.floecompanionapp.FloeDataTransmissionSvc.FloeDTBinder;
+
 public class FloeRecordingAct extends AppCompatActivity
 {
     public static final String TAG = "FloeRecordingAct";
@@ -42,12 +44,17 @@ public class FloeRecordingAct extends AppCompatActivity
 
     private FloeDataTransmissionSvc dataService;
     private FloeBLESvc bleService;
+    boolean BLESvcBound = false;
+    boolean DTSvcBound = false;
 
     //the connected bluetooth devices and their adapter
-    private final BluetoothManager bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-    private BluetoothAdapter bleAdapter = bleManager.getAdapter();
+    private BluetoothManager bleManager;
+    private BluetoothAdapter bleAdapter;
     private BluetoothDevice bleDevice1 = null;
     private BluetoothDevice bleDevice2 = null;
+
+    private boolean waitMore;
+
 
     private static boolean bleDevice1Connected = false;
     private static boolean bleDevice2Connected = false;
@@ -61,6 +68,8 @@ public class FloeRecordingAct extends AppCompatActivity
         setContentView(R.layout.activity_floe_recording);
 
         db = new FloeRunDatabase(getApplicationContext());
+        bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        bleAdapter = bleManager.getAdapter();
 
         //Start Data Transmission Service, which in turn starts BLE service. Then, bind to BLESvc as well
         Intent i = new Intent(this, FloeDataTransmissionSvc.class);
@@ -81,20 +90,20 @@ public class FloeRecordingAct extends AppCompatActivity
         }
         if (!bleAdapter.isEnabled())
         {
+            waitMore = true;
             Log.i(TAG, "BT not enabled yet");
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+            while(waitMore)
+            {
+                //wait for bluetooth activation activity to complete
+            }
         }
 
-        //open Device List activity, with popup windows that scan for devices
+        //open Device List activity, that scans for devices
         Intent newIntent = new Intent(FloeRecordingAct.this, FloeDeviceListAct.class);
+        Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
         startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
-        //For now, seems like the solution for multiple devices is to just catch the distinction in the onActivityResult function
-        //So, run the startActivityForResult function again
-        startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
-
-        //send the signal to the board to start broadcasting data
-        startDataTransfer();
     }
 
     @Override
@@ -117,12 +126,20 @@ public class FloeRecordingAct extends AppCompatActivity
         {
             Log.e(TAG, ignore.toString());
         }
-        unbindService(bleConnection);
-        unbindService(dataConnection);
-        dataService.stopSelf();
-        dataService = null;
-        bleService = null;
 
+        if (BLESvcBound && bleConnection != null)
+        {
+            unbindService(bleConnection);
+            BLESvcBound = false;
+            bleService = null;
+        }
+        if (DTSvcBound && dataConnection != null)
+        {
+            unbindService(dataConnection);
+            DTSvcBound = false;
+            dataService = null;
+        }
+        //dataService.stopSelf();
     }
 
     @Override
@@ -171,21 +188,42 @@ public class FloeRecordingAct extends AppCompatActivity
         switch(requestCode)
         {
             case REQUEST_SELECT_DEVICE:
+                Log.d(TAG, "onActivityResult REQUEST_SELECT_DEVICE");
                 if (resultCode == Activity.RESULT_OK && data != null)
                 {
+                    Log.d(TAG, "RESULT_OK, data!=null");
                     String deviceAddress = data.getStringExtra(BluetoothDevice.EXTRA_DEVICE);
 
                     if(bleDevice1==null)
                     {
                         bleDevice1 = bleAdapter.getRemoteDevice(deviceAddress);
-                        Log.d(TAG, "... onActivityResultdevice.address==" + bleDevice1 + " bleserviceValue" + bleService);
-                        bleService.connect(deviceAddress, 1);
+                        Log.d(TAG, "bleDevice1 = " + bleDevice1 + " , bleService = " + bleService);
+                        if(bleService.connect(deviceAddress, 1))
+                        {
+                            Log.d(TAG, "Connection of device 1 was attempted " + deviceAddress);
+                        }else
+                        {
+                            Log.e(TAG, "Somehow connect did not succeed");
+                        }
+
+                        //TODO: uncomment following when second board is ready
+                        //Start activity to choose second device
+                        //Intent newIntent = new Intent(FloeRecordingAct.this, FloeDeviceListAct.class);
+                        // Log.d(TAG, "Starting second activity with REQUEST_SELECT_DEVICE");
+                        //startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+
 
                     }else if(bleDevice2==null)
                     {
                         bleDevice2 = bleAdapter.getRemoteDevice(deviceAddress);
-                        Log.d(TAG, "... onActivityResultdevice.address==" + bleDevice2 + " bleserviceValue" + bleService);
-                        bleService.connect(deviceAddress, 2);
+                        Log.d(TAG, "bleDevice2 = " + bleDevice2 + " , bleService = " + bleService);
+                        if(bleService.connect(deviceAddress, 2))
+                        {
+                            Log.d(TAG, "Connection of device 2 was attempted at address "+deviceAddress);
+                        }else
+                        {
+                            Log.e(TAG, "Somehow connect did not succeed");
+                        }
 
                     }else
                     {
@@ -205,6 +243,7 @@ public class FloeRecordingAct extends AppCompatActivity
                     Toast.makeText(this, "Problem in BT Turning ON ", Toast.LENGTH_SHORT).show();
                     finish();
                 }
+                waitMore=false;
                 break;
 
             default:
@@ -349,8 +388,10 @@ public class FloeRecordingAct extends AppCompatActivity
 
     private void startDataTransfer()
     {
+        //TODO: remove this function from activity, it is now in BLESvc
         //This function sends the expected values to tell the boards to start transmitting data
         byte[] value = "R00E00000".getBytes();//enable right boot
+        Log.d(TAG, "writeRXCharacteristic (value R00E00000, deviceNum 1)");
         bleService.writeRXCharacteristic(value, 1);
         value = "L00E00000".getBytes();//enable left boot
         bleService.writeRXCharacteristic(value, 2);
@@ -383,15 +424,17 @@ public class FloeRecordingAct extends AppCompatActivity
         {
             FloeDataTransmissionSvc.FloeDTBinder binder = (FloeDataTransmissionSvc.FloeDTBinder) service;
             dataService = binder.getService();
+            DTSvcBound = true;
             dataService.setDataTransmissionState(FloeDataTransmissionSvc.STATE_RECORDING);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name)
         {
-
+            DTSvcBound = false;
         }
     };
+
 
     private ServiceConnection bleConnection = new ServiceConnection()
     {
@@ -400,6 +443,7 @@ public class FloeRecordingAct extends AppCompatActivity
         {
             FloeBLESvc.FloeBLEBinder binder = (FloeBLESvc.FloeBLEBinder) service;
             bleService = binder.getService();
+            BLESvcBound = true;
             Log.d(TAG, "onServiceConnected bleService= " + bleService);
             if (!bleService.initialize())
             {
@@ -412,6 +456,7 @@ public class FloeRecordingAct extends AppCompatActivity
         public void onServiceDisconnected(ComponentName name)
         {
             bleService = null;
+            BLESvcBound = false;
         }
     };
 

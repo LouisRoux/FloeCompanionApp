@@ -20,55 +20,41 @@ import android.view.WindowManager;
 import com.pinnaclebiometrics.floecompanionapp.FloeDataTransmissionSvc.FloeDTBinder;
 
 public class FloeRTFeedbackAct extends AppCompatActivity {
-
     FloeDataTransmissionSvc dataService;
-    private boolean DTSvcBound = false;
+    boolean DTSvcBound = false;
 
     public class RTFeedbackView extends View {
-
         Bitmap ball;
         Bitmap logo;
-
         int x, y;
-
         public RTFeedbackView(Context context) {
             super(context);
-
             ball = BitmapFactory.decodeResource(getResources(), R.drawable.circle1);
             logo = BitmapFactory.decodeResource(getResources(), R.drawable.pblogo);
-
             x = 0;
             y = 0;
         }
-
         @Override
         protected void onDraw(Canvas canvas)
         {
             super.onDraw(canvas);
-
             Rect rectScreen = new Rect();
             rectScreen.set(0, 0, canvas.getWidth(), canvas.getHeight() / 2);
-
             Paint black = new Paint();
             black.setColor(Color.BLACK);
             black.setStyle(Paint.Style.FILL);
-
             canvas.drawRect(rectScreen, black);
 /*
             int[] currentPoint = dataService.getCoP();
-
             if(currentPoint.length != 2)
             {
                 Log.e("FloeRTFeedbackAct", "CoP array is incomplete");
             }
-
             x = currentPoint[0] + canvas.getWidth()/2 - 25;
             y = canvas.getHeight()/4 - currentPoint[1] - 25;
-
             if
 */
             //test thing
-
             Log.v("FloeRTFeedbackAct", "canvas width = "+canvas.getWidth());
             Log.v("FloeRTFeedbackAct", "canvas height = "+canvas.getHeight());
             if (x < canvas.getWidth() - 40){
@@ -92,7 +78,6 @@ public class FloeRTFeedbackAct extends AppCompatActivity {
             yellow.setColor(Color.YELLOW);
             yellow.setStyle(Paint.Style.STROKE);
             yellow.setStrokeWidth(3);
-
             if(x < 270) {
                 canvas.drawLine(150,0,150,canvas.getHeight()/2,yellow);
             }
@@ -117,47 +102,50 @@ public class FloeRTFeedbackAct extends AppCompatActivity {
             if(y > 737) {
                 canvas.drawLine(0,777,1080,777,red);
             }
-
             int cx = (canvas.getWidth() - logo.getWidth()) >> 1;
-
-
             canvas.drawBitmap(logo, cx, 950, null);
-
             Paint p = new Paint();
             canvas.drawBitmap(ball, x, y, p);
             invalidate();
         }
     }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(new RTFeedbackView(this));
+        doBindService();
+    }
+    public void doBindService(){
         Intent i = new Intent(this, FloeDataTransmissionSvc.class);
         bindService(i, dataConnection, Context.BIND_AUTO_CREATE);
-
+        DTSvcBound = true;
+        Log.w("RTFeedback", "dataTransSvc bound!");
     }
-
     @Override
     public void onDestroy()
     {
         //This makes sure to unbind the bleSvc to avoid leaking a ServiceConnection
         //TODO: make sure every bound service gets unbound when its client stops
-        dataService.unbindService(dataConnection);
-        DTSvcBound = false;
+        super.onDestroy();
+        if (DTSvcBound && dataConnection != null)
+        {
+            unbindService(dataConnection);
+            Log.w("RTFeedback", "dataTransSvc unbound!");
+            DTSvcBound = false;
+        }
     }
-
     private ServiceConnection dataConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             FloeDataTransmissionSvc.FloeDTBinder binder = (FloeDataTransmissionSvc.FloeDTBinder) service;
             dataService = binder.getService();
+            DTSvcBound = true;
+            Log.w("RTFeedback","dataTransSvc bound in onServiceConnected!");
         }
-
         @Override
         public void onServiceDisconnected(ComponentName name) {
-
+            DTSvcBound = false;
         }
     };
 }

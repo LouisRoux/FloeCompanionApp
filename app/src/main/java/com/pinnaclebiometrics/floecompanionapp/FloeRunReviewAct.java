@@ -13,18 +13,21 @@ import java.util.List;
 
 public class FloeRunReviewAct extends AppCompatActivity {
 
-    private LineGraphSeries<DataPoint> series;
+    private LineGraphSeries<DataPoint> series1;
+    private LineGraphSeries<DataPoint> series2;
     double lastX = 0;
+    double lastY = 0;
     FloeRunDatabase db;
     final Handler handler = new Handler();
 
     public void displayGraphs(){
         GraphView graph1 = (GraphView) findViewById(R.id.graph1);
-        series = new LineGraphSeries<DataPoint>();
+        GraphView graph2 = (GraphView) findViewById(R.id.graph2);
+        series1 = new LineGraphSeries<DataPoint>();
+        series2 = new LineGraphSeries<DataPoint>();
         addEntries();
-        graph1.addSeries(series);
-
-
+        graph1.addSeries(series1);
+        graph2.addSeries(series2);
     }
 
     private void addEntries(){
@@ -50,26 +53,38 @@ public class FloeRunReviewAct extends AppCompatActivity {
             @Override
             public void run() {
                 //test stuff
-                db.deleteRun(5);
-
-                FloeRun testRun = new FloeRun(5,1);
-                testRun.setRunDuration(0);
+/*
+                FloeRun testRun = new FloeRun(1);
+                testRun.setRunDuration(1);
                 testRun.setRunName("Marshmallow");
-                db.createRun(testRun);
-                Log.w("FloeRunReviewAct", "testRun "+testRun.getRunID()+ " added to db");
+                long testRunID = db.createRun(testRun);
+                Log.w("FloeRunReviewAct", "testRun "+testRunID+ " added to db");
 
                 for (int i = 0; i < 100; i++){
                     int j[] = {-i,i};
                     int k[] = {1, 1, 1, 1, 1, 1, 1, 1};
-                    FloeDataPt testPt = new FloeDataPt(5,i,i, k, j);
+                    FloeDataPt testPt = new FloeDataPt(i, k, j);
+                    testPt.setRunID(testRunID);
                     db.createDataPt(testPt);
                     Log.w("FloeRunReviewAct", "testPt "+i+" added to db");
                 }
-
+*/
                 //end test stuff
 
+                long runID;
+                Bundle extras = getIntent().getExtras();
+                if(extras == null) {
+                    runID = 0;
+                } else {
+                    runID= extras.getLong("runID");
+                }
+
                 //TODO: change parameter in getRunDataPts
-                List<FloeDataPt> currentRun = db.getRunDataPts(5);
+                List<FloeDataPt> currentRun = db.getRunDataPts(runID);
+
+                if (currentRun.size() == 0){
+                    Log.e("FloeRunReviewAct","No data points in this run to graph!");
+                }
 
                 for (int i = 0; i < currentRun.size(); i++){
                     FloeDataPt currentPt = currentRun.get(i);
@@ -77,12 +92,26 @@ public class FloeRunReviewAct extends AppCompatActivity {
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            series.appendData(new DataPoint(lastX++, CoPx), false, 1000000000);
+                            series2.appendData(new DataPoint(lastX++, CoPx), false, 100000);
                         }
                     });
+                    Log.w("FloeRunReview","Data point "+i+" = "+currentPt.getCentreOfPressure(0)+" was added to the series.");
                 }
+
+                for (int i = 0; i < currentRun.size(); i++){
+                    FloeDataPt currentPt = currentRun.get(i);
+                    final double CoPy = (double) currentPt.getCentreOfPressure(1);
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            series1.appendData(new DataPoint(lastY++, CoPy), false, 100000);
+                        }
+                    });
+                    Log.w("FloeRunReview","Data point "+i+" = "+currentPt.getCentreOfPressure(0)+" was added to the series.");
+                }
+
                 dialog.dismiss();
-                Log.w("RunReviewAct", "series on graph ended with " + series.getHighestValueX());
+                Log.w("RunReviewAct", "series on graph ended with " + series1.getHighestValueX());
             }
         };
 
