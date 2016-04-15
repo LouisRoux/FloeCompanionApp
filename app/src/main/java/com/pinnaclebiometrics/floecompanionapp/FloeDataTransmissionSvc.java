@@ -16,6 +16,8 @@ import android.util.Log;
 
 import com.pinnaclebiometrics.floecompanionapp.FloeBLESvc.FloeBLEBinder;
 
+//TODO: merge with BLESvc
+//TODO: Change broadcast receivers to 'get' functions?
 
 public class FloeDataTransmissionSvc extends Service
 {

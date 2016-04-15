@@ -59,6 +59,7 @@ public class FloeRecordingAct extends AppCompatActivity
     private static boolean bleDevice1Connected = false;
     private static boolean bleDevice2Connected = false;
 
+    //TODO: move BLE connection stuff to main menu
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -70,34 +71,36 @@ public class FloeRecordingAct extends AppCompatActivity
         db = new FloeRunDatabase(getApplicationContext());
         bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         bleAdapter = bleManager.getAdapter();
+        Log.d(TAG, "initialized Bluetooth Manager and Adapter");
 
         //Start Data Transmission Service, which in turn starts BLE service. Then, bind to BLESvc as well
         Intent i = new Intent(this, FloeDataTransmissionSvc.class);
         bindService(i, dataConnection, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "Sent intent to bind to dataTransmissionSvc");
         i = new Intent(this, FloeBLESvc.class);
         bindService(i, bleConnection, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "Sent intent to bind to bleSvc");
 
         //Register the broadcast receiver for DataTransmissionSvc
         LocalBroadcastManager.getInstance(this).registerReceiver(dataTransmissionBroadcastReceiver, makeDataTransmissionIntentFilter());
         LocalBroadcastManager.getInstance(this).registerReceiver(BLEBroadcastReceiver, makeBLEIntentFilter());
+        Log.d(TAG, "Registered broadcast receivers");
 
         //Check if Bluetooth is available and  active, warn or activate if needed
         if (bleAdapter == null)
         {
+            Log.e(TAG, "bleAdapter was null");
             Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
             finish();
             return;
         }
         if (!bleAdapter.isEnabled())
         {
+            Log.e(TAG, "bleAdapter was not enabled");
             waitMore = true;
             Log.i(TAG, "BT not enabled yet");
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-            while(waitMore)
-            {
-                //wait for bluetooth activation activity to complete
-            }
         }
 
         //open Device List activity, that scans for devices
@@ -229,7 +232,19 @@ public class FloeRecordingAct extends AppCompatActivity
                     {
                         Log.e(TAG, "Both devices supposedly already connected, why has this been called 3 times?");
                     }
+                }else
+                {
+                    if(resultCode != Activity.RESULT_OK)
+                    {
+                        Log.e(TAG, "resultCode == RESULT_CANCELLED");
+                    }
+                    if(data==null)
+                    {
+                        Log.e(TAG, "data == null");
+                    }
+
                 }
+
                 break;
 
             case REQUEST_ENABLE_BT:
@@ -386,17 +401,6 @@ public class FloeRecordingAct extends AppCompatActivity
         }
     };
 
-    private void startDataTransfer()
-    {
-        //TODO: remove this function from activity, it is now in BLESvc
-        //This function sends the expected values to tell the boards to start transmitting data
-        byte[] value = "R00E00000".getBytes();//enable right boot
-        Log.d(TAG, "writeRXCharacteristic (value R00E00000, deviceNum 1)");
-        bleService.writeRXCharacteristic(value, 1);
-        value = "L00E00000".getBytes();//enable left boot
-        bleService.writeRXCharacteristic(value, 2);
-    }
-
     private static IntentFilter makeDataTransmissionIntentFilter()
     {
         //TODO: figure out if these IntentFilters work properly. i.e. they don't reject intents b/c of data content
@@ -425,6 +429,7 @@ public class FloeRecordingAct extends AppCompatActivity
             FloeDataTransmissionSvc.FloeDTBinder binder = (FloeDataTransmissionSvc.FloeDTBinder) service;
             dataService = binder.getService();
             DTSvcBound = true;
+            Log.d(TAG, "onServiceConnected dataTransmissionService= " + dataService);
             dataService.setDataTransmissionState(FloeDataTransmissionSvc.STATE_RECORDING);
         }
 

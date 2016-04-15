@@ -74,8 +74,14 @@ public class FloeBLESvc extends Service
         // After using a given device, you should make sure that BluetoothGatt.close() is called
         // such that resources are cleaned up properly.  In this particular example, close() is
         // invoked when the dataTransmission Service is disconnected from the BLE Service.
-        close(1);
-        close(2);
+        if(bleGatt1!=null)
+        {
+            close(1);
+        }
+        if(bleGatt2!=null)
+        {
+            close(2);
+        }
         return super.onUnbind(intent);
     }
 
@@ -129,6 +135,7 @@ public class FloeBLESvc extends Service
             super.onConnectionStateChange(gatt, status, newState);
             String intentAction;
             int deviceNum=0;
+            Log.d(TAG, "OnConnectionStateChange, newState = "+newState);
 
             if (newState == BluetoothProfile.STATE_CONNECTED)
             {
@@ -241,6 +248,7 @@ public class FloeBLESvc extends Service
         public void onServicesDiscovered(BluetoothGatt gatt, int status)
         {
             int deviceNum=0;
+            Log.d(TAG, "onServicesDiscovered()");
             if (status == BluetoothGatt.GATT_SUCCESS)
             {
                 if(gatt.equals(bleGatt1))
@@ -268,6 +276,7 @@ public class FloeBLESvc extends Service
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
         {
+            Log.d(TAG, "onCharacteristicRead()");
             if (status == BluetoothGatt.GATT_SUCCESS)
             {
                 createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
@@ -279,7 +288,22 @@ public class FloeBLESvc extends Service
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
         {
+            Log.d(TAG, "onCharacteristicChanged()");
             createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
+        }
+
+        @Override
+        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status)
+        {
+            Log.d(TAG, "onDescriptorWrite()");
+            //check if both devices are ready, then send the order to start transmission
+            if(bleGatt1!=null /*&& bleGatt2 != null*/)
+            {
+                //TODO: uncomment conditional field
+                //TODO: make sure this is in the right place
+                Log.d(TAG, "starting data transfer");
+                startDataTransfer();
+            }
         }
     };
 
@@ -436,11 +460,13 @@ public class FloeBLESvc extends Service
 
     public void writeRXCharacteristic(byte[] value, int deviceNum)
     {
+        Log.d(TAG, "writeRXCharacteristic "+value[0]+" "+value[1]+" , deviceNum "+deviceNum);
         switch (deviceNum)
         {
             case 1:
                 BluetoothGattService RxService = bleGatt1.getService(RX_SERVICE_UUID);
                 Log.e(TAG, "bleGatt1 null " + bleGatt1);
+                Log.d(TAG, "bleGatt1 RxService = " + RxService.toString());
                 if (RxService == null)
                 {
                     Log.e(TAG, "Rx service not found!");
@@ -448,6 +474,7 @@ public class FloeBLESvc extends Service
                     return;
                 }
                 BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
+                Log.d(TAG, "RxChar = "+RxChar.toString());
                 if (RxChar == null)
                 {
                     Log.e(TAG,"Rx characteristic not found!");
@@ -457,7 +484,7 @@ public class FloeBLESvc extends Service
                 RxChar.setValue(value);
                 boolean status = bleGatt1.writeCharacteristic(RxChar);
 
-                Log.d(TAG, "write TXchar - status=" + status);
+                Log.d(TAG, "write TXchar - status = " + status);
                 break;
 
             case 2:
@@ -490,10 +517,12 @@ public class FloeBLESvc extends Service
 
     public void enableTXNotification(int deviceNum)
     {
+        Log.d(TAG, "enableTXNotification(deviceNum "+deviceNum+")");
         switch(deviceNum)
         {
             case 1:
                 BluetoothGattService RxService = bleGatt1.getService(RX_SERVICE_UUID);
+                Log.d(TAG, "RxService = "+RxService.toString());
                 if (RxService == null)
                 {
                     Log.e(TAG, "Rx service not found!");
@@ -501,24 +530,21 @@ public class FloeBLESvc extends Service
                     return;
                 }
                 BluetoothGattCharacteristic TxChar = RxService.getCharacteristic(TX_CHAR_UUID);
+                Log.d(TAG, "TxChar = " + TxChar.toString());
                 if (TxChar == null)
                 {
                     Log.e(TAG, "Tx characteristic not found!");
                     createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
                     return;
                 }
+                Log.d(TAG, "set bleGatt1 Characteristic Notification "+TxChar.toString());
                 bleGatt1.setCharacteristicNotification(TxChar, true);
 
                 BluetoothGattDescriptor descriptor = TxChar.getDescriptor(CCCD);
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                Log.d(TAG, "writing bleGatt1 descriptor "+descriptor);
                 bleGatt1.writeDescriptor(descriptor);
-
-                //check if both devices are ready, then send the order to start transmission
-                if(bleGatt1!=null && bleGatt2 != null)
-                {
-                    //TODO: make sure this is in the right place
-                    startDataTransfer();
-                }
+                //writeDescriptor() will call bleGattCallback.onDescriptorWrite() upon successful descriptor write
 
                 break;
 
@@ -543,13 +569,6 @@ public class FloeBLESvc extends Service
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 bleGatt2.writeDescriptor(descriptor);
 
-                //check if both devices are ready, then send the order to start transmission
-                if(bleGatt1!=null && bleGatt2 != null)
-                {
-                    //TODO: make sure this is in the right place
-                    startDataTransfer();
-                }
-
                 break;
 
             default:
@@ -561,12 +580,13 @@ public class FloeBLESvc extends Service
     private void startDataTransfer()
     {
         //This function sends the expected values to tell the boards to start transmitting data
-        byte[] value = "R00E00000".getBytes();//enable right boot
-        Log.d(TAG, "writeRXCharacteristic (value R00E00000, deviceNum 1)");
+        Log.d(TAG, "startDataTransfer()");
+        byte[] value = "RS".getBytes();//enable right boot
+        Log.d(TAG, "writeRXCharacteristic (value RS, deviceNum 1)");
         writeRXCharacteristic(value, 1);
         //TODO: uncomment following operations when second board is ready
-        // value = "L00E00000".getBytes();//enable left boot
-        writeRXCharacteristic(value, 2);
+        // value = "LS".getBytes();//enable left boot
+        //writeRXCharacteristic(value, 2);
     }
 
     public void readCharacteristic(BluetoothGattCharacteristic characteristic, int deviceNum)

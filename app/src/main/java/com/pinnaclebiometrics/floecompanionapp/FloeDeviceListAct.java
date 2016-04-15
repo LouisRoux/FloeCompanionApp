@@ -1,4 +1,3 @@
-package com.pinnaclebiometrics.floecompanionapp;
 
 /*
  * Copyright (c) 2015, Nordic Semiconductor
@@ -21,6 +20,7 @@ package com.pinnaclebiometrics.floecompanionapp;
  * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package com.pinnaclebiometrics.floecompanionapp;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,13 +60,14 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class FloeDeviceListAct extends Activity
-{
+import com.pinnaclebiometrics.floecompanionapp.R;
+
+public class FloeDeviceListAct extends Activity {
     private BluetoothAdapter mBluetoothAdapter;
 
     // private BluetoothAdapter mBtAdapter;
     private TextView mEmptyList;
-    public static final String TAG = "DeviceListAct";
+    public static final String TAG = "DeviceListActivity";
 
     List<BluetoothDevice> deviceList;
     private DeviceAdapter deviceAdapter;
@@ -77,34 +78,33 @@ public class FloeDeviceListAct extends Activity
     private boolean mScanning;
 
 
+
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate");
         getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.title_bar);
         setContentView(R.layout.device_list);
         android.view.WindowManager.LayoutParams layoutParams = this.getWindow().getAttributes();
-        layoutParams.gravity= Gravity.TOP;
+        layoutParams.gravity=Gravity.TOP;
         layoutParams.y = 200;
         mHandler = new Handler();
         // Use this check to determine whether BLE is supported on the device.  Then you can
         // selectively disable BLE-related features.
-        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE))
-        {
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
             finish();
         }
 
         // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
         // BluetoothAdapter through BluetoothManager.
-        final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        final BluetoothManager bluetoothManager =
+                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
 
         // Checks if Bluetooth is supported on the device.
-        if (mBluetoothAdapter == null)
-        {
+        if (mBluetoothAdapter == null) {
             Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -112,11 +112,9 @@ public class FloeDeviceListAct extends Activity
         populateList();
         mEmptyList = (TextView) findViewById(R.id.empty);
         Button cancelButton = (Button) findViewById(R.id.btn_cancel);
-        cancelButton.setOnClickListener(new View.OnClickListener()
-        {
+        cancelButton.setOnClickListener(new OnClickListener() {
             @Override
-            public void onClick(View v)
-            {
+            public void onClick(View v) {
 
                 if (mScanning==false) scanLeDevice(true);
                 else finish();
@@ -125,8 +123,7 @@ public class FloeDeviceListAct extends Activity
 
     }
 
-    private void populateList()
-    {
+    private void populateList() {
         /* Initialize device list container */
         Log.d(TAG, "populateList");
         deviceList = new ArrayList<BluetoothDevice>();
@@ -141,17 +138,13 @@ public class FloeDeviceListAct extends Activity
 
     }
 
-    private void scanLeDevice(final boolean enable)
-    {
+    private void scanLeDevice(final boolean enable) {
         final Button cancelButton = (Button) findViewById(R.id.btn_cancel);
-        if (enable)
-        {
+        if (enable) {
             // Stops scanning after a pre-defined scan period.
-            mHandler.postDelayed(new Runnable()
-            {
+            mHandler.postDelayed(new Runnable() {
                 @Override
-                public void run()
-                {
+                public void run() {
                     mScanning = false;
                     mBluetoothAdapter.stopLeScan(mLeScanCallback);
 
@@ -163,8 +156,7 @@ public class FloeDeviceListAct extends Activity
             mScanning = true;
             mBluetoothAdapter.startLeScan(mLeScanCallback);
             cancelButton.setText(R.string.cancel);
-        } else
-        {
+        } else {
             mScanning = false;
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
             cancelButton.setText(R.string.scan);
@@ -172,30 +164,26 @@ public class FloeDeviceListAct extends Activity
 
     }
 
-    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback()
-    {
-        @Override
-        public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord)
-        {
-            runOnUiThread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    addDevice(device,rssi);
-                }
-            });
-        }
-    };
+    private BluetoothAdapter.LeScanCallback mLeScanCallback =
+            new BluetoothAdapter.LeScanCallback() {
 
-    private void addDevice(BluetoothDevice device, int rssi)
-    {
+                @Override
+                public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            addDevice(device,rssi);
+                        }
+                    });
+                }
+            };
+
+    private void addDevice(BluetoothDevice device, int rssi) {
         boolean deviceFound = false;
 
-        for (BluetoothDevice listDev : deviceList)
-        {
-            if (listDev.getAddress().equals(device.getAddress()))
-            {
+        for (BluetoothDevice listDev : deviceList) {
+            if (listDev.getAddress().equals(device.getAddress())) {
                 deviceFound = true;
                 break;
             }
@@ -203,8 +191,7 @@ public class FloeDeviceListAct extends Activity
 
 
         devRssiValues.put(device.getAddress(), rssi);
-        if (!deviceFound)
-        {
+        if (!deviceFound) {
             deviceList.add(device);
             mEmptyList.setVisibility(View.GONE);
 
@@ -216,8 +203,7 @@ public class FloeDeviceListAct extends Activity
     }
 
     @Override
-    public void onStart()
-    {
+    public void onStart() {
         super.onStart();
 
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -226,27 +212,23 @@ public class FloeDeviceListAct extends Activity
     }
 
     @Override
-    public void onStop()
-    {
+    public void onStop() {
         super.onStop();
         mBluetoothAdapter.stopLeScan(mLeScanCallback);
 
     }
 
     @Override
-    protected void onDestroy()
-    {
+    protected void onDestroy() {
         super.onDestroy();
         mBluetoothAdapter.stopLeScan(mLeScanCallback);
 
     }
 
-    private AdapterView.OnItemClickListener mDeviceClickListener = new AdapterView.OnItemClickListener()
-    {
+    private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
 
         @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id)
-        {
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             BluetoothDevice device = deviceList.get(position);
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
 
@@ -263,14 +245,12 @@ public class FloeDeviceListAct extends Activity
 
 
 
-    protected void onPause()
-    {
+    protected void onPause() {
         super.onPause();
         scanLeDevice(false);
     }
 
-    class DeviceAdapter extends BaseAdapter
-    {
+    class DeviceAdapter extends BaseAdapter {
         Context context;
         List<BluetoothDevice> devices;
         LayoutInflater inflater;
@@ -340,8 +320,7 @@ public class FloeDeviceListAct extends Activity
             return vg;
         }
     }
-    private void showMessage(String msg)
-    {
+    private void showMessage(String msg) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 }
