@@ -149,6 +149,25 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         return allRuns;
     }
 
+    public void deleteAll()
+    {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        List<FloeRun> allRuns = getAllRuns();
+        for (int i = 0; i < allRuns.size(); i++){
+            FloeRun currentRun = allRuns.get(i);
+            long runID = currentRun.getRunID();
+            List<FloeDataPt> runDataPts = getRunDataPts(runID);
+            for(FloeDataPt dataPt:runDataPts)
+            {
+                deleteDataPt(dataPt.getDataPtID());
+            }
+
+            db.delete(TABLE_RUNS, KEY_RUN_ID + " = ?", new String[]{String.valueOf(runID)});
+
+        }
+        Log.w("FloeRunDatabase", "Cleared Database; Database size now = "+getAllRuns().size());
+    }
 
     public void deleteRun(long runID)
     {
@@ -298,7 +317,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         ContentValues values = new ContentValues();
 
         //values.put(KEY_DATA_PT_ID, dataPt.getDataPtID());
-        values.put(KEY_RUN_ID, dataPt.getRunID());
+        //values.put(KEY_RUN_ID, dataPt.getRunID());
         values.put(KEY_DATA_PT_NUM, dataPt.getDataPtNum());
         values.put(KEY_TIMESTAMP, dataPt.getTimeStamp());
         values.put(KEY_SENSOR_0, dataPt.getSensorData(0));

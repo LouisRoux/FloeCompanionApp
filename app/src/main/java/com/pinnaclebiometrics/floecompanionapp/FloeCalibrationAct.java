@@ -11,23 +11,23 @@ import android.app.ProgressDialog;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.content.DialogInterface.OnDismissListener;
-import com.pinnaclebiometrics.floecompanionapp.FloeBLESvc.FloeBLEBinder;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 
-
 public class FloeCalibrationAct extends AppCompatActivity {
 
-    FloeBLESvc bleService;
+    FloeDataTransmissionSvc dataService;
+    boolean DTSvcBound = false;
+
+    FloeRunDatabase db = new FloeRunDatabase(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_floe_calibration);
-        Intent i = new Intent(this, FloeBLESvc.class);
-        bindService(i, bleConnection, Context.BIND_AUTO_CREATE);
+        doBindService();
     }
 
     public void getWeight(View view) {
@@ -38,17 +38,28 @@ public class FloeCalibrationAct extends AppCompatActivity {
         progress.setProgress(0);
         progress.show();
 
+        if(db.getAllRuns().size() < 1){
+            FloeRun testRun = new FloeRun(0);
+            testRun.setRunDuration(0);
+
+            long runID = db.createRun(testRun);
+            Log.w("FloeCalibrationAct","Database was empty, so new run with runID = "+runID+" was created to store weight. " +
+                    "Database size now "+db.getAllRuns().size());
+        }
+
 
         final Thread t = new Thread() {
             @Override
             public void run() {
-                /*int x = 0;
-                int sum = 0;
+                Log.v("FloeCalibrationAct","Inside thread to calculate weight now.");
 
+                int x = 0;
+                int sum = 0;
+/*
                 while(x < 75)
                 {
                     int currentSum = 0;
-                    int[] currentPoint = bleService.getPoint();
+                    int[] currentPoint = dataService.getPoint();
                     for(int i = 0; i < 8; i++)
                     {
                         currentSum += currentPoint[i];
@@ -59,11 +70,17 @@ public class FloeCalibrationAct extends AppCompatActivity {
                 }
 
                 sum = sum/75;
+                Log.w("FloeCalibrationAct", "Calculated weight = "+sum);
 
-                //todo: store sum in database!
                 progress.incrementProgressBy(1);
                 progress.dismiss();
                 */
+                Log.w("FloeCalibrationAct","Updating database with weight value now");
+                int[] sensors = {sum,0,0,0,0,0,0,0};
+                int[] CoPs = {0,0};
+                FloeDataPt weightPt = new FloeDataPt(1, 1, 0, sensors, CoPs);
+                weightPt.setDataPtID(1);
+                db.updateDataPt(weightPt);
 
                 //test function
                 for(int i = 0; i < 5; i++){
@@ -79,6 +96,7 @@ public class FloeCalibrationAct extends AppCompatActivity {
                         Thread.currentThread().interrupt();
                     }
                 }
+                //end test function
             }
         };
 
@@ -88,7 +106,7 @@ public class FloeCalibrationAct extends AppCompatActivity {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(FloeCalibrationAct.this);
-                alertDialogBuilder.setMessage("Done Calibrating!");
+                alertDialogBuilder.setMessage("Your weight has been calibrated!");
 
                 alertDialogBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
@@ -103,18 +121,37 @@ public class FloeCalibrationAct extends AppCompatActivity {
         });
     }
 
+    public void doBindService(){
+        Intent i = new Intent(this, FloeDataTransmissionSvc.class);
+        bindService(i, dataConnection, Context.BIND_AUTO_CREATE);
+        DTSvcBound = true;
+        Log.w("FloeCalibrationAct", "dataTransSvc bound!");
+    }
 
+    @Override
+    public void onDestroy()
+    {
+        //TODO: make sure every bound service gets unbound when its client stops
+        super.onDestroy();
+        if (DTSvcBound && dataConnection != null)
+        {
+            unbindService(dataConnection);
+            Log.w("FloeCalibrationAct", "dataTransSvc unbound!");
+            DTSvcBound = false;
+        }
+    }
 
-    private ServiceConnection bleConnection = new ServiceConnection() {
+    private ServiceConnection dataConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            FloeBLESvc.FloeBLEBinder binder = (FloeBLESvc.FloeBLEBinder) service;
-            bleService = binder.getService();
+            FloeDataTransmissionSvc.FloeDTBinder binder = (FloeDataTransmissionSvc.FloeDTBinder) service;
+            dataService = binder.getService();
+            DTSvcBound = true;
+            Log.w("FloeCalibrationAct","dataTransSvc bound in onServiceConnected!");
         }
-
         @Override
         public void onServiceDisconnected(ComponentName name) {
-
+            DTSvcBound = false;
         }
     };
 

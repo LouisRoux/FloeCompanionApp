@@ -126,7 +126,6 @@ public class FloeRunReviewAct extends AppCompatActivity {
         Log.w("FloeRunReviewAct", "got to onCreate!");
         db = new FloeRunDatabase(getApplicationContext());
         displayGraphs();
-
     }
 
 }

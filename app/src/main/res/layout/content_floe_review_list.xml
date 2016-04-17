@@ -16,9 +16,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/reviewList"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="76dp" />
+        android:layout_below="@+id/instructions"
+        android:layout_alignParentEnd="true" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -27,8 +26,8 @@
         android:text="Past Events"
         android:id="@+id/title"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="31dp" />
+        android:layout_marginTop="40dp"
+        android:layout_centerHorizontal="true" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -38,5 +37,15 @@
         android:id="@+id/instructions"
         android:layout_below="@+id/title"
         android:layout_centerHorizontal="true" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete All"
+        android:id="@+id/deleteAll"
+        android:layout_alignParentTop="true"
+        android:layout_alignEnd="@+id/reviewList"
+        android:onClick="deleteAll" />
 
 </RelativeLayout>
