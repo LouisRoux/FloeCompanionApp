@@ -41,6 +41,7 @@ public class FloeCalibrationAct extends AppCompatActivity {
         if(db.getAllRuns().size() < 1){
             FloeRun testRun = new FloeRun(0);
             testRun.setRunDuration(0);
+            testRun.setRunName("WEIGHT");
 
             long runID = db.createRun(testRun);
             Log.w("FloeCalibrationAct","Database was empty, so new run with runID = "+runID+" was created to store weight. " +

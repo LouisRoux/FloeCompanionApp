@@ -102,7 +102,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
 
         String selectQuery = "SELECT  * FROM "+TABLE_RUNS+" WHERE "+KEY_RUN_ID+" = "+runID;
 
-        Log.e("getRun sent dbQuery", selectQuery);
+        Log.d("getRun sent dbQuery", selectQuery);
 
         Cursor curs = db.rawQuery(selectQuery, null);
 
@@ -126,7 +126,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         List<FloeRun> allRuns = new ArrayList<FloeRun>();
         String selectQuery = "SELECT  * FROM " + TABLE_RUNS;
 
-        Log.e("getAllRuns sent dbQuery", selectQuery);
+        Log.d("getAllRuns sent dbQuery", selectQuery);
 
         Cursor curs = db.rawQuery(selectQuery, null);
 
@@ -233,7 +233,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         String selectQuery = "SELECT  * FROM "+TABLE_DATA_PTS+" WHERE "+KEY_DATA_PT_ID+" = "+dataPtID;
         Cursor curs = db.rawQuery(selectQuery, null);
 
-        Log.e("getDataPt sent dbQuery", selectQuery);
+        Log.d("getDataPt sent dbQuery", selectQuery);
 
         if(curs != null)
         {
@@ -333,4 +333,16 @@ public class FloeRunDatabase extends SQLiteOpenHelper
 
         return db.update(TABLE_DATA_PTS, values, KEY_RUN_ID+" = ?", new String[] {String.valueOf(dataPt.getDataPtID())});
     }
+
+    public int updateRunName(long runID, String name)
+    {
+        //updates the run data in the database from the passed run object
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(KEY_RUN_NAME, name);
+
+        return db.update(TABLE_RUNS, values, KEY_RUN_ID+" = ?", new String[] {String.valueOf(runID)});
+    }
+
 }

@@ -33,7 +33,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
         if(db.getAllRuns().size() < 1){
             FloeRun testRun = new FloeRun(0);
             testRun.setRunDuration(0);
-
+            testRun.setRunName("WEIGHT");
             long runID = db.createRun(testRun);
             Log.w("FloeMainMenuAct","Database was empty, so new run with runID = "+runID+" was created to store weight. " +
                     "Database size now "+db.getAllRuns().size());
@@ -59,7 +59,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
         rtBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (allRuns.size() < 1){
+                if (db.getAllRuns().size() < 1){
                     Toast.makeText(getApplicationContext(),
                             "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
@@ -74,7 +74,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
         recBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (allRuns.size() < 1){
+                if (db.getAllRuns().size() < 1){
                     Toast.makeText(getApplicationContext(),
                             "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
@@ -89,7 +89,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
         revBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (allRuns.size() < 1){
+                if (db.getAllRuns().size() < 1){
                     Toast.makeText(getApplicationContext(),
                             "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
