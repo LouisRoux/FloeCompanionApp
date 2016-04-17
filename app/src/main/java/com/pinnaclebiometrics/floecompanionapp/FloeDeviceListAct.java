@@ -234,6 +234,7 @@ public class FloeDeviceListAct extends Activity {
 
             Bundle b = new Bundle();
             b.putString(BluetoothDevice.EXTRA_DEVICE, deviceList.get(position).getAddress());
+            b.putString(BluetoothDevice.EXTRA_NAME, deviceList.get(position).getName());
 
             Intent result = new Intent();
             result.putExtras(b);

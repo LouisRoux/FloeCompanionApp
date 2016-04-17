@@ -50,17 +50,19 @@ public class FloeRecordingAct extends AppCompatActivity
     //private FloeBLESvc bleService;
     //boolean BLESvcBound = false;
 
+    private boolean waitMore = false;
+
     //the connected bluetooth devices and their adapter
     private BluetoothManager bleManager;
     private BluetoothAdapter bleAdapter;
-    private BluetoothDevice bleDevice1 = null;
-    private BluetoothDevice bleDevice2 = null;
+    private BluetoothDevice bleDeviceLeft = null;
+    private BluetoothDevice bleDeviceRight = null;
 
-    private boolean waitMore;
+    public static final String LEFT_NAME = "Left";//used to parse device name and choose which device object to operate on
+    public static final String RIGHT_NAME = "Right";//same as LEFT_NAME
 
-
-    private static boolean bleDevice1Connected = false;
-    private static boolean bleDevice2Connected = false;
+    private static boolean bleDeviceLeftConnected = false;
+    private static boolean bleDeviceRightConnected = false;
 
     //TODO: move BLE connection stuff to main menu
 
@@ -209,14 +211,16 @@ public class FloeRecordingAct extends AppCompatActivity
                 {
                     Log.d(TAG, "RESULT_OK, data!=null");
                     String deviceAddress = data.getStringExtra(BluetoothDevice.EXTRA_DEVICE);
+                    String deviceName = data.getStringExtra(BluetoothDevice.EXTRA_NAME);
+                    Log.d(TAG, "deviceName: "+deviceName);
 
-                    if(bleDevice1==null)
+                    if(deviceName.contains(LEFT_NAME))
                     {
-                        bleDevice1 = bleAdapter.getRemoteDevice(deviceAddress);
-                        Log.d(TAG, "bleDevice1 = " + bleDevice1 + " , dataService = " + dataService);
-                        if(dataService.connect(deviceAddress, 1))
+                        bleDeviceLeft = bleAdapter.getRemoteDevice(deviceAddress);
+                        Log.d(TAG, "bleDeviceLeft = " + bleDeviceLeft + " , dataService = " + dataService);
+                        if(dataService.connect(deviceAddress, FloeDataTransmissionSvc.LEFT_BOOT))
                         {
-                            Log.d(TAG, "Connection of device 1 was attempted " + deviceAddress);
+                            Log.d(TAG, "Connection of device LEFT_BOOT was attempted " + deviceAddress);
                         }else
                         {
                             Log.e(TAG, "Somehow connect did not succeed");
@@ -229,13 +233,13 @@ public class FloeRecordingAct extends AppCompatActivity
                         //startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
 
 
-                    }else if(bleDevice2==null)
+                    }else if(deviceName.contains(RIGHT_NAME))
                     {
-                        bleDevice2 = bleAdapter.getRemoteDevice(deviceAddress);
-                        Log.d(TAG, "bleDevice2 = " + bleDevice2 + " , dataService = " + dataService);
+                        bleDeviceRight = bleAdapter.getRemoteDevice(deviceAddress);
+                        Log.d(TAG, "bleDeviceRight = " + bleDeviceRight + " , dataService = " + dataService);
                         if(dataService.connect(deviceAddress, 2))
                         {
-                            Log.d(TAG, "Connection of device 2 was attempted at address "+deviceAddress);
+                            Log.d(TAG, "Connection of device RIGHT_BOOT was attempted at address "+deviceAddress);
                         }else
                         {
                             Log.e(TAG, "Somehow connect did not succeed");
@@ -293,12 +297,12 @@ public class FloeRecordingAct extends AppCompatActivity
                 Log.d(TAG, "Received broadcast ACTION_GATT_CONNECTED, device " + deviceNum);
                 switch(deviceNum)
                 {
-                    case 1:
-                        bleDevice1Connected=true;
+                    case FloeDataTransmissionSvc.LEFT_BOOT:
+                        bleDeviceLeftConnected=true;
                         break;
 
-                    case 2:
-                        bleDevice2Connected=true;
+                    case FloeDataTransmissionSvc.RIGHT_BOOT:
+                        bleDeviceRightConnected=true;
                         break;
 
                     default:
@@ -306,10 +310,10 @@ public class FloeRecordingAct extends AppCompatActivity
                         break;
                 }
 
-                if (bleDevice1 != null && bleDevice2 != null)
+                if (bleDeviceLeft != null && bleDeviceRight != null)
                 {
                     state = UART_PROFILE_2_CONNECTED;
-                } else if (bleDevice1 != null || bleDevice2 != null)
+                } else if (bleDeviceLeft != null || bleDeviceRight != null)
                 {
                     state = UART_PROFILE_1_CONNECTED;
                 } else
@@ -320,11 +324,11 @@ public class FloeRecordingAct extends AppCompatActivity
             }else if(action.equals(FloeDataTransmissionSvc.ACTION_GATT_DISCONNECTED))
             {
                 Log.d(TAG, "Received broadcast ACTION_GATT_DISCONNECTED, device " + deviceNum);
-                if (bleDevice1 != null || bleDevice2 != null)
+                if (bleDeviceLeft != null || bleDeviceRight != null)
                 {
                     state = UART_PROFILE_1_CONNECTED;
                     dataService.close(deviceNum);
-                } else if (bleDevice1 == null && bleDevice2 == null)
+                } else if (bleDeviceLeft == null && bleDeviceRight == null)
                 {
                     state = UART_PROFILE_DISCONNECTED;
                     dataService.close(deviceNum);
@@ -335,12 +339,12 @@ public class FloeRecordingAct extends AppCompatActivity
 
                 switch(deviceNum)
                 {
-                    case 1:
-                        bleDevice1Connected=false;
+                    case FloeDataTransmissionSvc.LEFT_BOOT:
+                        bleDeviceLeftConnected=false;
                         break;
 
-                    case 2:
-                        bleDevice2Connected=false;
+                    case FloeDataTransmissionSvc.RIGHT_BOOT:
+                        bleDeviceRightConnected=false;
                         break;
 
                     default:
@@ -356,16 +360,32 @@ public class FloeRecordingAct extends AppCompatActivity
             }else if(action.equals(FloeDataTransmissionSvc.ACTION_DEVICE_READY))
             {
                 Log.d(TAG, "Received broadcast ACTION_DEVICE_READY");
-                if(deviceNum == 1)
+                if(deviceNum == FloeDataTransmissionSvc.LEFT_BOOT)
                 {
-                    showMessage("First boot connected successfully. Please connect second boot.");
-                    Intent newIntent = new Intent(FloeRecordingAct.this, FloeDeviceListAct.class);
-                    Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
-                    startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+                    if(bleDeviceRightConnected)
+                    {
+                        showMessage("Second boot connected successfully. Enjoy!");
+                    }else
+                    {
+                        showMessage("First boot connected successfully. Please connect second boot.");
+                        Intent newIntent = new Intent(FloeRecordingAct.this, FloeDeviceListAct.class);
+                        Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
+                        startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+                    }
 
-                }else if(deviceNum == 2)
+                }else if(deviceNum == FloeDataTransmissionSvc.RIGHT_BOOT)
                 {
-                    showMessage("Second boot connected successfully. Enjoy!");
+                    if(bleDeviceLeftConnected)
+                    {
+                        showMessage("Second boot connected successfully. Enjoy!");
+                    }else
+                    {
+                        showMessage("First boot connected successfully. Please connect second boot.");
+                        Intent newIntent = new Intent(FloeRecordingAct.this, FloeDeviceListAct.class);
+                        Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
+                        startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+                    }
+
                 }else
                 {
                     Log.e(TAG, "Invalid device number: "+ deviceNum);
@@ -383,12 +403,12 @@ public class FloeRecordingAct extends AppCompatActivity
                 dataService.disconnect(deviceNum);
                 switch(deviceNum)
                 {
-                    case 1:
-                        bleDevice1Connected=false;
+                    case FloeDataTransmissionSvc.LEFT_BOOT:
+                        bleDeviceLeftConnected=false;
                         break;
 
-                    case 2:
-                        bleDevice2Connected=false;
+                    case FloeDataTransmissionSvc.RIGHT_BOOT:
+                        bleDeviceRightConnected=false;
                         break;
 
                     default:
@@ -472,10 +492,10 @@ public class FloeRecordingAct extends AppCompatActivity
     {
         switch(deviceNum)
         {
-            case 1:
-                return bleDevice1Connected;
-            case 2:
-                return bleDevice2Connected;
+            case FloeDataTransmissionSvc.LEFT_BOOT:
+                return bleDeviceLeftConnected;
+            case FloeDataTransmissionSvc.RIGHT_BOOT:
+                return bleDeviceRightConnected;
             default:
                 Log.e(TAG, "Invalid device number passed to isDeviceConnected()");
                 return false;
