@@ -353,6 +353,24 @@ public class FloeRecordingAct extends AppCompatActivity
                 Log.d(TAG, "Received broadcast ACTION_GATT_SERVICES_DISCOVERED");
                 dataService.enableTXNotification(deviceNum);
 
+            }else if(action.equals(FloeDataTransmissionSvc.ACTION_DEVICE_READY))
+            {
+                Log.d(TAG, "Received broadcast ACTION_DEVICE_READY");
+                if(deviceNum == 1)
+                {
+                    showMessage("First boot connected successfully. Please connect second boot.");
+                    Intent newIntent = new Intent(FloeRecordingAct.this, FloeDeviceListAct.class);
+                    Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
+                    startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+
+                }else if(deviceNum == 2)
+                {
+                    showMessage("Second boot connected successfully. Enjoy!");
+                }else
+                {
+                    Log.e(TAG, "Invalid device number: "+ deviceNum);
+                }
+
             }else if(action.equals(FloeDataTransmissionSvc.ACTION_DATA_AVAILABLE))
             {
                 Log.d(TAG, "Received broadcast ACTION_DATA_AVAILABLE");
@@ -388,7 +406,7 @@ public class FloeRecordingAct extends AppCompatActivity
 
     private void recordDataPt()
     {
-        //TODO: call this method in the recording activity execution loop
+        //TODO: call this method in the recording activity worker thread
         Log.d(TAG, "recordDataPt()");
         FloeDataPt dataPt = dataService.getDataPt();
 
@@ -417,6 +435,7 @@ public class FloeRecordingAct extends AppCompatActivity
         intentFilter.addAction(FloeDataTransmissionSvc.ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(FloeDataTransmissionSvc.DEVICE_DOES_NOT_SUPPORT_UART);
         intentFilter.addAction(FloeDataTransmissionSvc.ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(FloeDataTransmissionSvc.ACTION_DEVICE_READY);
         return intentFilter;
     }
 

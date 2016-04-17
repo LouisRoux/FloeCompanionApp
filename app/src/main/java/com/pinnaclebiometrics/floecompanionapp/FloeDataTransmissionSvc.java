@@ -27,9 +27,6 @@ import com.pinnaclebiometrics.floecompanionapp.FloeBLESvc.FloeBLEBinder;
 
 import java.util.UUID;
 
-//TODO: merge with BLESvc
-//TODO: Change broadcast receivers to 'get' functions?
-
 public class FloeDataTransmissionSvc extends Service
 {
     public static final String TAG = "FloeDataTransmissionSvc";
@@ -44,10 +41,14 @@ public class FloeDataTransmissionSvc extends Service
     public static final int STATE_RECORDING = 20;
     public static final int STATE_CALIBRATING = 30;
 
+    public static final String LEFT_ENABLE = "LE";
+    public static final String RIGHT_ENABLE = "RE";
+
     public final static String ACTION_GATT_CONNECTED = "com.pinnaclebiometrics.floecompanionapp.ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED = "com.pinnaclebiometrics.floecompanionapp.ACTION_GATT_DISCONNECTED";
     public final static String ACTION_GATT_SERVICES_DISCOVERED = "com.pinnaclebiometrics.floecompanionapp.ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_DATA_AVAILABLE = "com.pinnaclebiometrics.floecompanionapp.ACTION_DATA_AVAILABLE";
+    public final static String ACTION_DEVICE_READY = "com.pinnaclebiometrics.floecompanionapp.ACTION_DEVICE_READY";
     public final static String DEVICE_DOES_NOT_SUPPORT_UART = "com.pinnaclebiometrics.floecompanionapp.DEVICE_DOES_NOT_SUPPORT_UART";
 
     private static final int STATE_DISCONNECTED = 0;
@@ -69,14 +70,20 @@ public class FloeDataTransmissionSvc extends Service
     //dataTransmissionState is used to keep track of what to do with incoming data
     private static int dataTransmissionState = STATE_IDLE;
 
+    //used to store the raw un-linearized sensor data as soon as it is received
+    byte[] leftBootRawData = new byte[8];
+    byte[] rightBootRawData = new byte[8];
+
     private int[] sensorData = new int[8];//array to store sensor data temporarily
     private int[] centreOfPressure = new int[2]; //array to store calculated CoP value
-    FloeDataPt dataPt = null;//dataPt used to store aggregate data
+    FloeDataPt dataPt = null;//dataPt used to store object before passing it to recordingAct
 
     private boolean leftBootDataReceived = false;
     private boolean rightBootDataReceived = false;
-    private boolean newDataPointReady = false;
-    private boolean currentlyProcessingData = false;
+    private boolean leftBootTransmitting = false;
+    private boolean rightBootTransmitting = false;
+    //private boolean newDataPointReady = false;
+    //private boolean currentlyProcessingData = false;
 
     //bluetooth objects required to operate properly
     private BluetoothManager bleManager = null;
@@ -135,50 +142,25 @@ public class FloeDataTransmissionSvc extends Service
         int CoPx = ( (BR-BL)*dBx + (M5R-M5L)*dM5x + (M1R-M1L)*dM1x + (HR-HL)*dHx)/weight;
         int CoPy = ( (BR+BL)*dBy + (M5R+M5L)*dM5y + (M1R+M1L)*dM1y - (HR+HL)*dHy)/weight;
 
-        Log.d(TAG, "Bx="+dBx+" By="+dBy+"M5x="+dM5x+" M5y="+dM5y+"M1x="+dM1x+" M1y="+dM1y+"Hx="+dHx+" Hy="+dHy);
+        Log.d(TAG, "BL="+BL+" BR="+BR+"M5L="+M5L+" M5R="+M5R+"M1L="+M1L+" M1R="+M1R+"HL="+HL+" HR="+HR);
         Log.d(TAG, "CoPx = "+CoPx+" , CoPy = "+CoPy);
 
         int[] CoP = {CoPx, CoPy};
         return CoP;
     }
 
-    private void extractData(final byte[] txValue)
+    private void extractData()
     {
         //TODO: verify the data-extracting function works
         Log.d(TAG, "extractData()");
         byte[] dataBytes = {0,0,0,0};
         int sensorValue;
-        int baseIndex=0;//baseIndex tells us where to write the data in the sensorData array
+        int baseIndex=0;//baseIndex tells us where to write the data in the sensorData array. We start with left boot
 
-        if(txValue[0] == (byte) 0x4C)
+        for(int j=0;j<4;j++)
         {
-            //data received from left BMH
-            if(leftBootDataReceived)
-            {
-                Log.d(TAG, "Left boot data already received");
-                return;
-            }
-            baseIndex=1;
-            Log.d(TAG, "Received data from left BMH");
-        }else if(txValue[0] == (byte) 0x52)
-        {
-            //Data received from right BMH
-            if(rightBootDataReceived)
-            {
-                Log.d(TAG, "Right boot data already received");
-            }
-            baseIndex=5;
-            Log.d(TAG, "Received data from right BMH");
-        }else
-        {
-            //Invalid header
-            Log.e(TAG, "Invalid header code");
-        }
-
-        for(int j=1;j<5;j++)
-        {
-            dataBytes[2]=txValue[j*2-1];
-            dataBytes[3]=txValue[j*2];
+            dataBytes[2]=leftBootRawData[j*2];
+            dataBytes[3]=leftBootRawData[j*2+1];
             sensorValue=0;
 
             for (int i = 0; i < 4; i++)
@@ -186,47 +168,58 @@ public class FloeDataTransmissionSvc extends Service
                 int shift = (4 - 1 - i) * 8;
                 sensorValue += (dataBytes[i] & 0x000000FF) << shift;
             }
-            sensorData[baseIndex+j-1] = Linearize(sensorValue);
-            Log.i(TAG, "Unpacked data from sensor " + (baseIndex+j-1) + ". value = " + sensorValue);
+            sensorData[baseIndex+j] = Linearize(sensorValue);
+            Log.i(TAG, "Unpacked data from sensor " + (baseIndex+j) + ". value = " + sensorValue);
         }
 
-        //check if we have enough data to create a DataPt object.
-        if(leftBootDataReceived && rightBootDataReceived)
+        baseIndex=4;
+        for(int j=0;j<4;j++)
         {
-            Log.d(TAG, "Received data from both boots");
-            //We now have data from both boots, so we decide what to do next based on the activity
-            switch (dataTransmissionState)
-            {
-                case STATE_RT_FEEDBACK:
-                    Log.d(TAG, "performing operation for STATE_RT_FEEDBACK");
-                    getCoP();
-                    //send out broadcast using NEW_COP_AVAILABLE
-                    //createBroadcast(NEW_COP_AVAILABLE, centreOfPressure);
-                    newDataPointReady=true;
-                    break;
-                case STATE_RECORDING:
-                    Log.d(TAG, "performing operation for STATE_RECORDING");
-                    getCoP();
-                    //Create dataPt object for Recording activity
-                    FloeDataPt dataPt = new FloeDataPt(System.currentTimeMillis(), sensorData, centreOfPressure);
-                    newDataPointReady=true;
-                    break;
+            dataBytes[2]=rightBootRawData[j*2];
+            dataBytes[3]=rightBootRawData[j*2+1];
+            sensorValue=0;
 
-                case STATE_CALIBRATING:
-                    Log.d(TAG, "performing operation for STATE_CALIBRATING");
-                    newDataPointReady=true;
-                    //send out broadcast using NEW_SENSOR_DATA_AVAILABLE
-                    //createBroadcast(NEW_SENSOR_DATA_AVAILABLE, sensorData);
-                    break;
-                default:
-                    //The dataTransmissionState is invalid
-                    Log.e(TAG, "invalid dataTransmissionState");
-                    break;
+            for (int i = 0; i < 4; i++)
+            {
+                int shift = (4 - 1 - i) * 8;
+                sensorValue += (dataBytes[i] & 0x000000FF) << shift;
             }
-            //set the flags back so that we can tell when new data has arrived
-            leftBootDataReceived = false;
-            rightBootDataReceived = false;
+            sensorData[baseIndex+j] = Linearize(sensorValue);
+            Log.i(TAG, "Unpacked data from sensor " + (baseIndex+j) + ". value = " + sensorValue);
         }
+
+        //We now have data from both boots, so we decide what to do next based on the activity
+        switch (dataTransmissionState)
+        {
+            case STATE_RT_FEEDBACK:
+                Log.d(TAG, "performing operation for STATE_RT_FEEDBACK");
+                getCoP();
+                //send out broadcast using NEW_COP_AVAILABLE
+                //createBroadcast(NEW_COP_AVAILABLE, centreOfPressure);
+                //newDataPointReady=true;
+                break;
+            case STATE_RECORDING:
+                Log.d(TAG, "performing operation for STATE_RECORDING");
+                getCoP();
+                //Create dataPt object for Recording activity
+                FloeDataPt dataPt = new FloeDataPt(System.currentTimeMillis(), sensorData, centreOfPressure);
+                //newDataPointReady=true;
+                break;
+
+            case STATE_CALIBRATING:
+                Log.d(TAG, "performing operation for STATE_CALIBRATING");
+                //newDataPointReady=true;
+                //send out broadcast using NEW_SENSOR_DATA_AVAILABLE
+                //createBroadcast(NEW_SENSOR_DATA_AVAILABLE, sensorData);
+                break;
+            default:
+                //The dataTransmissionState is invalid
+                Log.e(TAG, "invalid dataTransmissionState");
+                break;
+        }
+        //set the flags back so that we can tell when new data has arrived
+        leftBootDataReceived = false;
+        rightBootDataReceived = false;
     }
     //TODO: figure out how to sequentially read from each boot
 
@@ -393,29 +386,53 @@ public class FloeDataTransmissionSvc extends Service
             Log.d(TAG, "onCharacteristicRead()");
             if (status == BluetoothGatt.GATT_SUCCESS)
             {
-                currentlyProcessingData = true;
-                extractData(characteristic.getValue());
-                currentlyProcessingData = false;
-
                 createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
                 //TODO: see if we need to add more here
-                //probably not since dataTransmissionSvc does all the data unpacking
+                //probably not
             }
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
         {
-            Log.d(TAG, "onCharacteristicChanged()");
-            if(dataTransmissionState == STATE_IDLE || currentlyProcessingData)
+
+            if(dataTransmissionState == STATE_IDLE)
             {
                 //We don't want to do anything with the data
                 return;
             }
+            Log.d(TAG, "onCharacteristicChanged(");
+            byte[] receivedChar = characteristic.getValue();
+            Log.d(TAG, "characteristic: "+receivedChar[0]+" "+receivedChar[1]+" "+receivedChar[2]+" "+receivedChar[3]+" "+receivedChar[4]+" "+receivedChar[5]+" "+receivedChar[6]+" "+receivedChar[7]+" "+receivedChar[8]);
 
-            currentlyProcessingData = true;
-            extractData(characteristic.getValue());
-            currentlyProcessingData = false;
+            if(receivedChar[0] == (byte) 0x4C)
+            {
+                //data received from left BMH
+                Log.d(TAG, "Received data from left BMH");
+                for(int i=1;i<9;i++)
+                {
+                    leftBootRawData[i-1] = receivedChar[i];
+                }
+                leftBootDataReceived=true;
+
+            }else if(receivedChar[0] == (byte) 0x52)
+            {
+                Log.d(TAG, "Received data from right BMH");
+                for(int i=1;i<9;i++)
+                {
+                    rightBootRawData[i-1] = receivedChar[i];
+                }
+                rightBootDataReceived=true;
+
+            }else
+            {
+                //Invalid header
+                Log.e(TAG, "Invalid header code");
+            }
+
+            Log.d(TAG, "onCharacteristicChanged() completed correctly");
+
+            //extractData(characteristic.getValue());
 
             //createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
         }
@@ -425,12 +442,45 @@ public class FloeDataTransmissionSvc extends Service
         {
             Log.d(TAG, "onDescriptorWrite()");
             //check if both devices are ready, then send the order to start transmission
-            if(bleGatt1!=null /*&& bleGatt2 != null*/)
+            if(bleGatt1!=null)
             {
-                //TODO: uncomment conditional field
-                //TODO: make sure this is in the right place
-                Log.d(TAG, "starting data transfer");
-                startDataTransfer();
+                if(bleGatt2 != null)
+                {
+                    createBroadcast(ACTION_DEVICE_READY, 2);
+                    Log.d(TAG, "starting data transfer");
+                    startDataTransfer();//TODO: make sure this is in the right place, potentially put in individual activities
+                }else
+                {
+                    //send broadcast for activity to prompt choice for second boot
+                    createBroadcast(ACTION_DEVICE_READY, 1);
+                }
+            }
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
+        {
+            if(leftBootTransmitting)
+            {
+                if(rightBootTransmitting)
+                {
+                    //both boots are transmitting data
+                    Log.d(TAG, "Both boots now transmitting data");
+
+                }else
+                {
+                    //enable right boot transmission
+                    Log.d(TAG, "Left boot now transmitting data");
+
+                    byte[] value = LEFT_ENABLE.getBytes();//enable left boot
+                    Log.d(TAG, "writeRXCharacteristic (value "+LEFT_ENABLE+", deviceNum 2)");
+                    writeRXCharacteristic(value, 2);
+
+                }
+
+            }else
+            {
+                //TODO: add stuff for dealing with stopped transmission if needed
             }
         }
     };
@@ -438,9 +488,9 @@ public class FloeDataTransmissionSvc extends Service
     public int[] getSensorData()
     {
         Log.d(TAG, "getSensorData()");
-        if(newDataPointReady)
+        if(leftBootDataReceived && rightBootDataReceived)
         {
-            newDataPointReady=false;
+            extractData();
             return sensorData;
         }
         else
@@ -453,9 +503,9 @@ public class FloeDataTransmissionSvc extends Service
     public int[] getCentreOfPressure()
     {
         Log.d(TAG, "getCentreOfPressure()");
-        if(newDataPointReady)
+        if(leftBootDataReceived && rightBootDataReceived)
         {
-            newDataPointReady=false;
+            extractData();
             return centreOfPressure;
         }
         else
@@ -468,9 +518,9 @@ public class FloeDataTransmissionSvc extends Service
     public FloeDataPt getDataPt()
     {
         Log.d(TAG, "getDataPt()");
-        if(newDataPointReady)
+        if(leftBootDataReceived && rightBootDataReceived)
         {
-            newDataPointReady=false;
+            extractData();
             return dataPt;
         }
         else
@@ -650,7 +700,7 @@ public class FloeDataTransmissionSvc extends Service
                     return;
                 }
                 BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
-                Log.d(TAG, "RxChar = "+RxChar.toString());
+                Log.d(TAG, "bleGatt1 RxChar = "+RxChar.toString());
                 if (RxChar == null)
                 {
                     Log.e(TAG,"Rx characteristic not found!");
@@ -666,6 +716,7 @@ public class FloeDataTransmissionSvc extends Service
             case 2:
                 RxService = bleGatt2.getService(RX_SERVICE_UUID);
                 Log.e(TAG, "bleGatt2 null" + bleGatt1);
+                Log.d(TAG, "bleGatt2 RxService = " + RxService.toString());
                 if (RxService == null)
                 {
                     Log.e(TAG, "Rx service not found!");
@@ -673,6 +724,7 @@ public class FloeDataTransmissionSvc extends Service
                     return;
                 }
                 RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
+                Log.d(TAG, "bleGatt2 RxChar = "+RxChar.toString());
                 if (RxChar == null)
                 {
                     Log.e(TAG,"Rx characteristic not found!");
@@ -757,13 +809,9 @@ public class FloeDataTransmissionSvc extends Service
     {
         //This function sends the expected values to tell the boards to start transmitting data
         Log.d(TAG, "startDataTransfer()");
-        byte[] value = "RS".getBytes();//enable right boot
-        Log.d(TAG, "writeRXCharacteristic (value RS, deviceNum 1)");
+        byte[] value = RIGHT_ENABLE.getBytes();//enable right boot
+        Log.d(TAG, "writeRXCharacteristic (value "+RIGHT_ENABLE+", deviceNum 1)");
         writeRXCharacteristic(value, 1);
-        //TODO: uncomment following operations when second board is ready
-        //value = "LS".getBytes();//enable left boot
-        //Log.d(TAG, "writeRXCharacteristic (value LS, deviceNum 2)");
-        //writeRXCharacteristic(value, 2);
     }
 
     public void readCharacteristic(BluetoothGattCharacteristic characteristic, int deviceNum)
