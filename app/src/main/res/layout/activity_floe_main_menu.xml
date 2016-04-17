@@ -27,45 +27,49 @@
         tools:context="clara.floe.MainActivity">
 
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="Calibrate Weight"
             android:id="@+id/calBtn"
-            android:layout_below="@+id/imageView"
-            android:layout_centerHorizontal="true" />
+            android:alpha="100"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="10dp" />
 
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="RT Feedback"
             android:id="@+id/rtBtn"
             android:layout_below="@+id/calBtn"
-            android:layout_centerHorizontal="true" />
+            android:layout_centerHorizontal="true"
+            android:layout_margin="10dp" />
 
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="Record Event"
             android:id="@+id/recBtn"
             android:layout_below="@+id/rtBtn"
-            android:layout_centerHorizontal="true" />
+            android:layout_centerHorizontal="true"
+            android:layout_margin="10dp" />
 
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="Review Past Events"
             android:id="@+id/revBtn"
             android:layout_below="@+id/recBtn"
-            android:layout_centerHorizontal="true" />
+            android:layout_centerHorizontal="true"
+            android:layout_margin="10dp" />
 
         <ImageView
             android:layout_width="wrap_content"
-            android:layout_height="200dp"
+            android:layout_height="150dp"
             android:id="@+id/imageView"
             android:src="@drawable/pblogo"
             android:layout_alignParentTop="true"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentEnd="true" />
+            android:layout_centerHorizontal="true" />
 
     </RelativeLayout>
 
