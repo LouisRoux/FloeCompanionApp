@@ -43,9 +43,9 @@ public class FloeRecordingAct extends AppCompatActivity
     private long dataPtNum = 1;
 
     private FloeDataTransmissionSvc dataService;
-    private FloeBLESvc bleService;
-    boolean BLESvcBound = false;
     boolean DTSvcBound = false;
+    //private FloeBLESvc bleService;
+    //boolean BLESvcBound = false;
 
     //the connected bluetooth devices and their adapter
     private BluetoothManager bleManager;
@@ -77,14 +77,14 @@ public class FloeRecordingAct extends AppCompatActivity
         Intent i = new Intent(this, FloeDataTransmissionSvc.class);
         bindService(i, dataConnection, Context.BIND_AUTO_CREATE);
         Log.d(TAG, "Sent intent to bind to dataTransmissionSvc");
-        i = new Intent(this, FloeBLESvc.class);
-        bindService(i, bleConnection, Context.BIND_AUTO_CREATE);
-        Log.d(TAG, "Sent intent to bind to bleSvc");
+        //i = new Intent(this, FloeBLESvc.class);
+        //bindService(i, bleConnection, Context.BIND_AUTO_CREATE);
+        //Log.d(TAG, "Sent intent to bind to bleSvc");
 
         //Register the broadcast receiver for DataTransmissionSvc
         LocalBroadcastManager.getInstance(this).registerReceiver(dataTransmissionBroadcastReceiver, makeDataTransmissionIntentFilter());
-        LocalBroadcastManager.getInstance(this).registerReceiver(BLEBroadcastReceiver, makeBLEIntentFilter());
-        Log.d(TAG, "Registered broadcast receivers");
+        //LocalBroadcastManager.getInstance(this).registerReceiver(BLEBroadcastReceiver, makeBLEIntentFilter());
+        Log.d(TAG, "Registered broadcast receiver");
 
         //Check if Bluetooth is available and  active, warn or activate if needed
         if (bleAdapter == null)
@@ -124,18 +124,21 @@ public class FloeRecordingAct extends AppCompatActivity
         try
         {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(dataTransmissionBroadcastReceiver);
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(BLEBroadcastReceiver);
+            //LocalBroadcastManager.getInstance(this).unregisterReceiver(BLEBroadcastReceiver);
         } catch (Exception ignore)
         {
             Log.e(TAG, ignore.toString());
         }
 
+        /*
         if (BLESvcBound && bleConnection != null)
         {
             unbindService(bleConnection);
             BLESvcBound = false;
             bleService = null;
         }
+        */
+
         if (DTSvcBound && dataConnection != null)
         {
             unbindService(dataConnection);
@@ -200,8 +203,8 @@ public class FloeRecordingAct extends AppCompatActivity
                     if(bleDevice1==null)
                     {
                         bleDevice1 = bleAdapter.getRemoteDevice(deviceAddress);
-                        Log.d(TAG, "bleDevice1 = " + bleDevice1 + " , bleService = " + bleService);
-                        if(bleService.connect(deviceAddress, 1))
+                        Log.d(TAG, "bleDevice1 = " + bleDevice1 + " , dataService = " + dataService);
+                        if(dataService.connect(deviceAddress, 1))
                         {
                             Log.d(TAG, "Connection of device 1 was attempted " + deviceAddress);
                         }else
@@ -219,8 +222,8 @@ public class FloeRecordingAct extends AppCompatActivity
                     }else if(bleDevice2==null)
                     {
                         bleDevice2 = bleAdapter.getRemoteDevice(deviceAddress);
-                        Log.d(TAG, "bleDevice2 = " + bleDevice2 + " , bleService = " + bleService);
-                        if(bleService.connect(deviceAddress, 2))
+                        Log.d(TAG, "bleDevice2 = " + bleDevice2 + " , dataService = " + dataService);
+                        if(dataService.connect(deviceAddress, 2))
                         {
                             Log.d(TAG, "Connection of device 2 was attempted at address "+deviceAddress);
                         }else
@@ -272,6 +275,8 @@ public class FloeRecordingAct extends AppCompatActivity
         @Override
         public void onReceive(Context context, Intent intent)
         {
+            /*
+            Old dataTransmissionBroadcastReceiver
             String action = intent.getAction();
             Bundle b = intent.getBundleExtra(FloeDataTransmissionSvc.EXTRA_DATA);
             FloeDataPt dataPt = b.getParcelable(BUNDLE_KEY);
@@ -298,9 +303,105 @@ public class FloeRecordingAct extends AppCompatActivity
             {
                 Log.e(TAG, "dataTransmissionBroadcastReceiver received an invalid action code");
             }
+            */
+
+            String action = intent.getAction();
+            int deviceNum = intent.getIntExtra(FloeBLESvc.EXTRA_DATA, 0);
+
+            if(action.equals(FloeBLESvc.ACTION_GATT_CONNECTED))
+            {
+                Log.d(TAG, "Received broadcast ACTION_GATT_CONNECTED, device " + deviceNum);
+                switch(deviceNum)
+                {
+                    case 1:
+                        bleDevice1Connected=true;
+                        break;
+
+                    case 2:
+                        bleDevice2Connected=true;
+                        break;
+
+                    default:
+                        Log.e(TAG, "Invalid device number: " + deviceNum);
+                        break;
+                }
+
+                if (bleDevice1 != null && bleDevice2 != null)
+                {
+                    state = UART_PROFILE_2_CONNECTED;
+                } else if (bleDevice1 != null || bleDevice2 != null)
+                {
+                    state = UART_PROFILE_1_CONNECTED;
+                } else
+                {
+                    Log.e(TAG, "No device connected despite just receiving ACTION_GATT_CONNECTED");
+                }
+
+            }else if(action.equals(FloeBLESvc.ACTION_GATT_DISCONNECTED))
+            {
+                Log.d(TAG, "Received broadcast ACTION_GATT_DISCONNECTED, device " + deviceNum);
+                if (bleDevice1 != null || bleDevice2 != null)
+                {
+                    state = UART_PROFILE_1_CONNECTED;
+                    dataService.close(deviceNum);
+                } else if (bleDevice1 == null && bleDevice2 == null)
+                {
+                    state = UART_PROFILE_DISCONNECTED;
+                    dataService.close(deviceNum);
+                } else
+                {
+                    Log.e(TAG, "More than one device connected despite just receiving ACTION_GATT_DISCONNECTED");
+                }
+
+                switch(deviceNum)
+                {
+                    case 1:
+                        bleDevice1Connected=false;
+                        break;
+
+                    case 2:
+                        bleDevice2Connected=false;
+                        break;
+
+                    default:
+                        Log.e(TAG, "Invalid device number: " + deviceNum);
+                        break;
+                }
+
+            }else if(action.equals(FloeBLESvc.ACTION_GATT_SERVICES_DISCOVERED))
+            {
+                Log.d(TAG, "Received broadcast ACTION_GATT_SERVICES_DISCOVERED");
+                dataService.enableTXNotification(deviceNum);
+
+            }else if(action.equals(FloeBLESvc.DEVICE_DOES_NOT_SUPPORT_UART))
+            {
+                Log.d(TAG, "Received broadcast DEVICE_DOES_NOT_SUPPORT_UART");
+                showMessage("Device doesn't support UART. Disconnecting.");
+                dataService.disconnect(deviceNum);
+                switch(deviceNum)
+                {
+                    case 1:
+                        bleDevice1Connected=false;
+                        break;
+
+                    case 2:
+                        bleDevice2Connected=false;
+                        break;
+
+                    default:
+                        Log.e(TAG, "Invalid device number: " + deviceNum);
+                        break;
+                }
+
+            }else
+            {
+                Log.e(TAG, "DataTransmissionBroadcastReceiver received an invalid action code");
+            }
+
         }
     };
 
+    /*
     private final BroadcastReceiver BLEBroadcastReceiver = new BroadcastReceiver()
     {
         @Override
@@ -400,7 +501,9 @@ public class FloeRecordingAct extends AppCompatActivity
             }
         }
     };
+    */
 
+    /*
     private static IntentFilter makeDataTransmissionIntentFilter()
     {
         //TODO: figure out if these IntentFilters work properly. i.e. they don't reject intents b/c of data content
@@ -409,8 +512,10 @@ public class FloeRecordingAct extends AppCompatActivity
         intentFilter.addAction(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE_NR);
         return intentFilter;
     }
+    */
 
-    private static IntentFilter makeBLEIntentFilter()
+    private static IntentFilter makeDataTransmissionIntentFilter()
+    //private static IntentFilter makeBLEIntentFilter()
     {
         //TODO: figure out if these IntentFilters work properly. i.e. they don't reject intents b/c of data content
         IntentFilter intentFilter = new IntentFilter();
@@ -431,6 +536,11 @@ public class FloeRecordingAct extends AppCompatActivity
             DTSvcBound = true;
             Log.d(TAG, "onServiceConnected dataTransmissionService= " + dataService);
             dataService.setDataTransmissionState(FloeDataTransmissionSvc.STATE_RECORDING);
+            if (!dataService.initialize())
+            {
+                Log.e(TAG, "Unable to initialize Bluetooth");
+                finish();
+            }
         }
 
         @Override
@@ -440,7 +550,7 @@ public class FloeRecordingAct extends AppCompatActivity
         }
     };
 
-
+    /*
     private ServiceConnection bleConnection = new ServiceConnection()
     {
         @Override
@@ -464,6 +574,7 @@ public class FloeRecordingAct extends AppCompatActivity
             BLESvcBound = false;
         }
     };
+    */
 
     private void showMessage(String msg)
     {
