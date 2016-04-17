@@ -67,16 +67,18 @@ public class FloeDataTransmissionSvc extends Service
     private int connectionState = STATE_DISCONNECTED;
 
     //dataTransmissionState is used to keep track of what to do with incoming data
-    private static int dataTransmissionState = 0;
+    private static int dataTransmissionState = STATE_IDLE;
 
-    private boolean newRun = true;
     private int[] sensorData = new int[8];//array to store sensor data temporarily
     private int[] centreOfPressure = new int[2]; //array to store calculated CoP value
+    FloeDataPt dataPt = null;//dataPt used to store aggregate data
 
     private boolean leftBootDataReceived = false;
     private boolean rightBootDataReceived = false;
+    private boolean newDataPointReady = false;
+    private boolean currentlyProcessingData = false;
 
-    //all bluetooth objects required to work properly
+    //bluetooth objects required to operate properly
     private BluetoothManager bleManager = null;
     private BluetoothAdapter bleAdapter = null;
     private BluetoothDevice bleDevice1 = null;//maybe we don't need this here
@@ -199,29 +201,22 @@ public class FloeDataTransmissionSvc extends Service
                     Log.d(TAG, "performing operation for STATE_RT_FEEDBACK");
                     getCoP();
                     //send out broadcast using NEW_COP_AVAILABLE
-                    createBroadcast(NEW_COP_AVAILABLE, centreOfPressure);
+                    //createBroadcast(NEW_COP_AVAILABLE, centreOfPressure);
+                    newDataPointReady=true;
                     break;
                 case STATE_RECORDING:
                     Log.d(TAG, "performing operation for STATE_RECORDING");
                     getCoP();
-                    //Create dataPt object to send to Recording activity
+                    //Create dataPt object for Recording activity
                     FloeDataPt dataPt = new FloeDataPt(System.currentTimeMillis(), sensorData, centreOfPressure);
-
-                    if (!newRun)
-                    {
-                        //send out broadcast using NEW_DATA_PT_AVAILABLE
-                        createBroadcast(NEW_DATA_PT_AVAILABLE, dataPt);
-                    } else
-                    {
-                        //send out broadcast using NEW_DATA_PT_AVAILABLE_NR
-                        createBroadcast(NEW_DATA_PT_AVAILABLE_NR, dataPt);
-                        newRun=false;
-                    }
+                    newDataPointReady=true;
                     break;
+
                 case STATE_CALIBRATING:
                     Log.d(TAG, "performing operation for STATE_CALIBRATING");
+                    newDataPointReady=true;
                     //send out broadcast using NEW_SENSOR_DATA_AVAILABLE
-                    createBroadcast(NEW_SENSOR_DATA_AVAILABLE, sensorData);
+                    //createBroadcast(NEW_SENSOR_DATA_AVAILABLE, sensorData);
                     break;
                 default:
                     //The dataTransmissionState is invalid
@@ -398,6 +393,10 @@ public class FloeDataTransmissionSvc extends Service
             Log.d(TAG, "onCharacteristicRead()");
             if (status == BluetoothGatt.GATT_SUCCESS)
             {
+                currentlyProcessingData = true;
+                extractData(characteristic.getValue());
+                currentlyProcessingData = false;
+
                 createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
                 //TODO: see if we need to add more here
                 //probably not since dataTransmissionSvc does all the data unpacking
@@ -408,7 +407,17 @@ public class FloeDataTransmissionSvc extends Service
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
         {
             Log.d(TAG, "onCharacteristicChanged()");
-            createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
+            if(dataTransmissionState == STATE_IDLE || currentlyProcessingData)
+            {
+                //We don't want to do anything with the data
+                return;
+            }
+
+            currentlyProcessingData = true;
+            extractData(characteristic.getValue());
+            currentlyProcessingData = false;
+
+            //createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
         }
 
         @Override
@@ -426,8 +435,54 @@ public class FloeDataTransmissionSvc extends Service
         }
     };
 
+    public int[] getSensorData()
+    {
+        Log.d(TAG, "getSensorData()");
+        if(newDataPointReady)
+        {
+            newDataPointReady=false;
+            return sensorData;
+        }
+        else
+        {
+            Log.d(TAG, "No new data point ready");
+            return null;
+        }
+    }
+
+    public int[] getCentreOfPressure()
+    {
+        Log.d(TAG, "getCentreOfPressure()");
+        if(newDataPointReady)
+        {
+            newDataPointReady=false;
+            return centreOfPressure;
+        }
+        else
+        {
+            Log.d(TAG, "No new data point ready");
+            return null;
+        }
+    }
+
+    public FloeDataPt getDataPt()
+    {
+        Log.d(TAG, "getDataPt()");
+        if(newDataPointReady)
+        {
+            newDataPointReady=false;
+            return dataPt;
+        }
+        else
+        {
+            Log.d(TAG, "No new data point ready");
+            return null;
+        }
+    }
+
     public boolean initialize()
     {
+        Log.d(TAG, "initialize()");
         if (bleManager == null)
         {
             bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -521,6 +576,7 @@ public class FloeDataTransmissionSvc extends Service
 
     public void disconnect(int deviceNum)
     {
+        Log.d(TAG, "disconnect("+deviceNum+")");
         switch (deviceNum)
         {
             case 1:
@@ -547,6 +603,7 @@ public class FloeDataTransmissionSvc extends Service
 
     public void close(int deviceNum)
     {
+        Log.d(TAG, "close("+deviceNum+")");
         switch(deviceNum)
         {
             case 1:
@@ -704,7 +761,8 @@ public class FloeDataTransmissionSvc extends Service
         Log.d(TAG, "writeRXCharacteristic (value RS, deviceNum 1)");
         writeRXCharacteristic(value, 1);
         //TODO: uncomment following operations when second board is ready
-        // value = "LS".getBytes();//enable left boot
+        //value = "LS".getBytes();//enable left boot
+        //Log.d(TAG, "writeRXCharacteristic (value LS, deviceNum 2)");
         //writeRXCharacteristic(value, 2);
     }
 
@@ -769,29 +827,6 @@ public class FloeDataTransmissionSvc extends Service
 
     }
 
-    private void createBroadcast(final String action, final int[] arrayOfData)
-    {
-        //This function sends out a broadcast with an int array of the sensor values or CoP, for the Calibrating or RTFeedback activity
-        final Intent intent = new Intent(action);
-        intent.putExtra(EXTRA_DATA, arrayOfData);
-
-        Log.d(TAG, "Sending broadcast " + action);
-        //send out the broadcast
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-    }
-
-    private void createBroadcast(final String action, final FloeDataPt dataPt)
-    {
-        //This function sends out a broadcast with a dataPt object, for the recording activity
-        Bundle b = new Bundle();
-        b.putParcelable(BUNDLE_KEY, dataPt);
-        final Intent intent = new Intent(action);
-        intent.putExtra(EXTRA_DATA, b);
-
-        Log.d(TAG, "Sending broadcast " + action);
-        //send out the broadcast
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-    }
 
     //set up to be bound
     @Override
@@ -911,7 +946,6 @@ public class FloeDataTransmissionSvc extends Service
                 Log.d(TAG, "Received broadcast ACTION_DATA_AVAILABLE");
                 final byte[] txValue = intent.getByteArrayExtra(FloeBLESvc.EXTRA_DATA);
 
-                //TODO: verify the data-extracting function works
                 byte[] dataBytes = {0,0,0,0};
                 int sensorValue;
                 int baseIndex=0;//baseIndex tells us where to write the data in the sensorData array
@@ -1000,5 +1034,29 @@ public class FloeDataTransmissionSvc extends Service
             }
         }
     };
+
+    private void createBroadcast(final String action, final int[] arrayOfData)
+    {
+        //This function sends out a broadcast with an int array of the sensor values or CoP, for the Calibrating or RTFeedback activity
+        final Intent intent = new Intent(action);
+        intent.putExtra(EXTRA_DATA, arrayOfData);
+
+        Log.d(TAG, "Sending broadcast " + action);
+        //send out the broadcast
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
+    private void createBroadcast(final String action, final FloeDataPt dataPt)
+    {
+        //This function sends out a broadcast with a dataPt object, for the recording activity
+        Bundle b = new Bundle();
+        b.putParcelable(BUNDLE_KEY, dataPt);
+        final Intent intent = new Intent(action);
+        intent.putExtra(EXTRA_DATA, b);
+
+        Log.d(TAG, "Sending broadcast " + action);
+        //send out the broadcast
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
     */
 }

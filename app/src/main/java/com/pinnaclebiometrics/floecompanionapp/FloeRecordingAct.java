@@ -24,6 +24,8 @@ import android.widget.Toast;
 
 import com.pinnaclebiometrics.floecompanionapp.FloeDataTransmissionSvc.FloeDTBinder;
 
+import java.util.List;
+
 public class FloeRecordingAct extends AppCompatActivity
 {
     public static final String TAG = "FloeRecordingAct";
@@ -39,6 +41,7 @@ public class FloeRecordingAct extends AppCompatActivity
     private int state = UART_PROFILE_DISCONNECTED;
 
     private static FloeRunDatabase db;
+    private boolean newRun = true;
     private long runNum;
     private long dataPtNum = 1;
 
@@ -118,6 +121,13 @@ public class FloeRecordingAct extends AppCompatActivity
     @Override
     public void onDestroy()
     {
+        //set the run duration for the run that has been recorded
+        List<FloeDataPt> runPts =  db.getRunDataPts(runNum);
+        int runDuration = (int) (runPts.get(runPts.size()-1).getTimeStamp() - runPts.get(0).getTimeStamp());
+        FloeRun run = db.getRun(runNum);
+        run.setRunDuration(runDuration);
+        db.updateRun(run);
+
         super.onDestroy();
         Log.d(TAG, "onDestroy()");
 
@@ -275,40 +285,10 @@ public class FloeRecordingAct extends AppCompatActivity
         @Override
         public void onReceive(Context context, Intent intent)
         {
-            /*
-            Old dataTransmissionBroadcastReceiver
             String action = intent.getAction();
-            Bundle b = intent.getBundleExtra(FloeDataTransmissionSvc.EXTRA_DATA);
-            FloeDataPt dataPt = b.getParcelable(BUNDLE_KEY);
+            int deviceNum = intent.getIntExtra(FloeDataTransmissionSvc.EXTRA_DATA, 0);
 
-            if(action.equals(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE))
-            {
-                Log.d(TAG, "Received broadcast NEW_DATA_PT_AVAILABLE");
-                dataPt.setRunID(runNum);
-                dataPt.setDataPtNum(dataPtNum);
-                db.createDataPt(dataPt);
-                dataPtNum++;
-            }else if(action.equals(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE_NR))
-            {
-                //This is only used for the first data point of a run
-                Log.d(TAG, "Received broadcast NEW_DATA_PT_AVAILABLE_NR");
-                long value = dataPt.getTimeStamp();
-                FloeRun run = new FloeRun(value);
-                runNum = db.createRun(run);
-                dataPt.setRunID(runNum);
-                dataPt.setDataPtNum(dataPtNum);
-                db.createDataPt(dataPt);
-                dataPtNum++;
-            }else
-            {
-                Log.e(TAG, "dataTransmissionBroadcastReceiver received an invalid action code");
-            }
-            */
-
-            String action = intent.getAction();
-            int deviceNum = intent.getIntExtra(FloeBLESvc.EXTRA_DATA, 0);
-
-            if(action.equals(FloeBLESvc.ACTION_GATT_CONNECTED))
+            if(action.equals(FloeDataTransmissionSvc.ACTION_GATT_CONNECTED))
             {
                 Log.d(TAG, "Received broadcast ACTION_GATT_CONNECTED, device " + deviceNum);
                 switch(deviceNum)
@@ -337,7 +317,7 @@ public class FloeRecordingAct extends AppCompatActivity
                     Log.e(TAG, "No device connected despite just receiving ACTION_GATT_CONNECTED");
                 }
 
-            }else if(action.equals(FloeBLESvc.ACTION_GATT_DISCONNECTED))
+            }else if(action.equals(FloeDataTransmissionSvc.ACTION_GATT_DISCONNECTED))
             {
                 Log.d(TAG, "Received broadcast ACTION_GATT_DISCONNECTED, device " + deviceNum);
                 if (bleDevice1 != null || bleDevice2 != null)
@@ -368,12 +348,17 @@ public class FloeRecordingAct extends AppCompatActivity
                         break;
                 }
 
-            }else if(action.equals(FloeBLESvc.ACTION_GATT_SERVICES_DISCOVERED))
+            }else if(action.equals(FloeDataTransmissionSvc.ACTION_GATT_SERVICES_DISCOVERED))
             {
                 Log.d(TAG, "Received broadcast ACTION_GATT_SERVICES_DISCOVERED");
                 dataService.enableTXNotification(deviceNum);
 
-            }else if(action.equals(FloeBLESvc.DEVICE_DOES_NOT_SUPPORT_UART))
+            }else if(action.equals(FloeDataTransmissionSvc.ACTION_DATA_AVAILABLE))
+            {
+                Log.d(TAG, "Received broadcast ACTION_DATA_AVAILABLE");
+                showMessage("Connection Successful. Receiving data over BLE.");
+
+            }else if(action.equals(FloeDataTransmissionSvc.DEVICE_DOES_NOT_SUPPORT_UART))
             {
                 Log.d(TAG, "Received broadcast DEVICE_DOES_NOT_SUPPORT_UART");
                 showMessage("Device doesn't support UART. Disconnecting.");
@@ -401,7 +386,115 @@ public class FloeRecordingAct extends AppCompatActivity
         }
     };
 
+    private void recordDataPt()
+    {
+        //TODO: call this method in the recording activity execution loop
+        Log.d(TAG, "recordDataPt()");
+        FloeDataPt dataPt = dataService.getDataPt();
+
+        if(newRun)
+        {
+            //This is only used for the first data point of a run
+            Log.d(TAG, "Creating new run in database");
+            long value = dataPt.getTimeStamp();
+            FloeRun run = new FloeRun(value);
+            runNum = db.createRun(run);
+        }
+
+        Log.d(TAG, "Adding point "+dataPtNum+" to run "+runNum);
+        dataPt.setRunID(runNum);
+        dataPt.setDataPtNum(dataPtNum);
+        db.createDataPt(dataPt);
+        dataPtNum++;
+    }
+
+    private static IntentFilter makeDataTransmissionIntentFilter()
+    //private static IntentFilter makeBLEIntentFilter()
+    {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(FloeDataTransmissionSvc.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(FloeDataTransmissionSvc.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(FloeDataTransmissionSvc.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(FloeDataTransmissionSvc.DEVICE_DOES_NOT_SUPPORT_UART);
+        intentFilter.addAction(FloeDataTransmissionSvc.ACTION_DATA_AVAILABLE);
+        return intentFilter;
+    }
+
+    private ServiceConnection dataConnection = new ServiceConnection()
+    {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service)
+        {
+            FloeDataTransmissionSvc.FloeDTBinder binder = (FloeDataTransmissionSvc.FloeDTBinder) service;
+            dataService = binder.getService();
+            DTSvcBound = true;
+            Log.d(TAG, "onServiceConnected dataTransmissionService= " + dataService);
+            dataService.setDataTransmissionState(FloeDataTransmissionSvc.STATE_RECORDING);
+            if (!dataService.initialize())
+            {
+                Log.e(TAG, "Unable to initialize Bluetooth");
+                finish();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name)
+        {
+            DTSvcBound = false;
+        }
+    };
+
+    private void showMessage(String msg)
+    {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+    }
+
+    public static boolean isDeviceConnected(int deviceNum)
+    {
+        switch(deviceNum)
+        {
+            case 1:
+                return bleDevice1Connected;
+            case 2:
+                return bleDevice2Connected;
+            default:
+                Log.e(TAG, "Invalid device number passed to isDeviceConnected()");
+                return false;
+        }
+    }
+
     /*
+
+    Old dataTransmissionBroadcastReceiver onReceive()function
+
+            String action = intent.getAction();
+            Bundle b = intent.getBundleExtra(FloeDataTransmissionSvc.EXTRA_DATA);
+            FloeDataPt dataPt = b.getParcelable(BUNDLE_KEY);
+
+            if(action.equals(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE))
+            {
+                Log.d(TAG, "Received broadcast NEW_DATA_PT_AVAILABLE");
+                dataPt.setRunID(runNum);
+                dataPt.setDataPtNum(dataPtNum);
+                db.createDataPt(dataPt);
+                dataPtNum++;
+            }else if(action.equals(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE_NR))
+            {
+                //This is only used for the first data point of a run
+                Log.d(TAG, "Received broadcast NEW_DATA_PT_AVAILABLE_NR");
+                long value = dataPt.getTimeStamp();
+                FloeRun run = new FloeRun(value);
+                runNum = db.createRun(run);
+                dataPt.setRunID(runNum);
+                dataPt.setDataPtNum(dataPtNum);
+                db.createDataPt(dataPt);
+                dataPtNum++;
+            }else
+            {
+                Log.e(TAG, "dataTransmissionBroadcastReceiver received an invalid action code");
+            }
+
+
     private final BroadcastReceiver BLEBroadcastReceiver = new BroadcastReceiver()
     {
         @Override
@@ -501,56 +594,7 @@ public class FloeRecordingAct extends AppCompatActivity
             }
         }
     };
-    */
 
-    /*
-    private static IntentFilter makeDataTransmissionIntentFilter()
-    {
-        //TODO: figure out if these IntentFilters work properly. i.e. they don't reject intents b/c of data content
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE);
-        intentFilter.addAction(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE_NR);
-        return intentFilter;
-    }
-    */
-
-    private static IntentFilter makeDataTransmissionIntentFilter()
-    //private static IntentFilter makeBLEIntentFilter()
-    {
-        //TODO: figure out if these IntentFilters work properly. i.e. they don't reject intents b/c of data content
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(FloeBLESvc.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(FloeBLESvc.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(FloeBLESvc.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(FloeBLESvc.DEVICE_DOES_NOT_SUPPORT_UART);
-        return intentFilter;
-    }
-
-    private ServiceConnection dataConnection = new ServiceConnection()
-    {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service)
-        {
-            FloeDataTransmissionSvc.FloeDTBinder binder = (FloeDataTransmissionSvc.FloeDTBinder) service;
-            dataService = binder.getService();
-            DTSvcBound = true;
-            Log.d(TAG, "onServiceConnected dataTransmissionService= " + dataService);
-            dataService.setDataTransmissionState(FloeDataTransmissionSvc.STATE_RECORDING);
-            if (!dataService.initialize())
-            {
-                Log.e(TAG, "Unable to initialize Bluetooth");
-                finish();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name)
-        {
-            DTSvcBound = false;
-        }
-    };
-
-    /*
     private ServiceConnection bleConnection = new ServiceConnection()
     {
         @Override
@@ -574,26 +618,16 @@ public class FloeRecordingAct extends AppCompatActivity
             BLESvcBound = false;
         }
     };
+
+    private static IntentFilter makeDataTransmissionIntentFilter()
+    {
+
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE);
+        intentFilter.addAction(FloeDataTransmissionSvc.NEW_DATA_PT_AVAILABLE_NR);
+        return intentFilter;
+    }
     */
-
-    private void showMessage(String msg)
-    {
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-    }
-
-    public static boolean isDeviceConnected(int deviceNum)
-    {
-        switch(deviceNum)
-        {
-            case 1:
-                return bleDevice1Connected;
-            case 2:
-                return bleDevice2Connected;
-            default:
-                Log.e(TAG, "Invalid device number passed to isDeviceConnected()");
-                return false;
-        }
-    }
 }
 //TODO: note down in journal: 1 April studied Android-nRF-UART app by Nordic to figure out stuff about BLE
 //TODO: make sure to avoid leaking ServiceConnections
