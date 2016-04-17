@@ -61,7 +61,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
             public void onClick(View v) {
                 if (allRuns.size() < 1){
                     Toast.makeText(getApplicationContext(),
-                            "Please calibrate weight first!", Toast.LENGTH_LONG).show();
+                            "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
                 }
                 else{
@@ -76,7 +76,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
             public void onClick(View v) {
                 if (allRuns.size() < 1){
                     Toast.makeText(getApplicationContext(),
-                            "Please calibrate weight first!", Toast.LENGTH_LONG).show();
+                            "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
                 }
                 else{
@@ -91,7 +91,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
             public void onClick(View v) {
                 if (allRuns.size() < 1){
                     Toast.makeText(getApplicationContext(),
-                            "Please calibrate weight first!", Toast.LENGTH_LONG).show();
+                            "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
                 }
                 else{

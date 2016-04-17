@@ -154,7 +154,7 @@ public class FloeRunDatabase extends SQLiteOpenHelper
         SQLiteDatabase db = this.getWritableDatabase();
 
         List<FloeRun> allRuns = getAllRuns();
-        for (int i = 0; i < allRuns.size(); i++){
+        for (int i = 1; i < allRuns.size(); i++){
             FloeRun currentRun = allRuns.get(i);
             long runID = currentRun.getRunID();
             List<FloeDataPt> runDataPts = getRunDataPts(runID);
