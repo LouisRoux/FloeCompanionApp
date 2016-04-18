@@ -506,8 +506,9 @@ public class FloeRecordingAct extends AppCompatActivity
         int M1R = sensorData[4];
         int HR = sensorData[7];
         //TODO: retrieve weight from database to assign
-        FloeDataPt temp = db.getDataPt(1);
-        int weight = temp.getSensorData(1);
+        //FloeDataPt temp = db.getDataPt(1);
+        //int weight = temp.getSensorData(1);
+        int weight = 10000;
 
         //TODO: get values for insole distances - relative to 540x444 quadrants
 
@@ -540,9 +541,10 @@ public class FloeRecordingAct extends AppCompatActivity
         {
             for (int j = 0; j < 8; j += 2)
             {
-                sensorValue = ByteBuffer.wrap(rawData[k]).order(ByteOrder.LITTLE_ENDIAN).getShort(j);//TODO: verify that data is indeed in little-endian
-                sensorData[(k * 4) + (j / 2)] = Linearize(sensorValue);
+                sensorValue = ByteBuffer.wrap(rawData[k]).order(ByteOrder.LITTLE_ENDIAN).getShort(j);//TODO: verify data
                 Log.i(TAG, "Unpacked data from sensor " + ((k * 4) + (j / 2)) + ". value = " + sensorValue);
+                sensorData[(k * 4) + (j / 2)] = Linearize(sensorValue);
+                Log.i(TAG, "Linearized data from sensor " + ((k * 4) + (j / 2)) + ". value = " + sensorData[(k * 4) + (j / 2)]);
             }
         }
         return sensorData;
@@ -550,13 +552,19 @@ public class FloeRecordingAct extends AppCompatActivity
 
     public int Linearize(int v)
     {
+        /*if(v<1)
+        {
+            v=1;
+        }
         Log.d(TAG, "Linearize("+v+")");
         double r2 = 10000;
         //TODO: input voltage value?
-        double inputVoltage = 3;
+        double inputVoltage = 4095;
         double exponent = 1/0.9;
 
-        return (int) Math.pow((inputVoltage/v - 1)*r2, exponent);
+        Double temp = Math.pow((inputVoltage/v - 1)*r2, exponent);
+        return temp.intValue();*/
+        return v;//TODO: linearize properly
     }
 
     /*private static IntentFilter makeDataTransmissionIntentFilter()

@@ -28,7 +28,9 @@ public class FloeReviewListAct extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_floe_review_list);
-//test - inserting new run
+
+
+/*//test - inserting new run
         FloeRun testRun = new FloeRun(1000000000);
         testRun.setRunDuration(0);
         testRun.setRunName("yumyumrun#"+db.getAllRuns().size());
@@ -46,7 +48,8 @@ public class FloeReviewListAct extends AppCompatActivity {
             db.createDataPt(testPt);
             Log.w("FloeReviewListAct", "testPt "+i+" added to db");
         }
-//end test
+//end test*/
+
         getRuns();
         Log.w("FloeReviewListAct", "end of onCreate");
     }
