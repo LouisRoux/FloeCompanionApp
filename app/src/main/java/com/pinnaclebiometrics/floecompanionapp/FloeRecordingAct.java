@@ -20,6 +20,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 import java.util.List;
+import java.nio.*;
 
 public class FloeRecordingAct extends AppCompatActivity
 {
@@ -43,7 +44,7 @@ public class FloeRecordingAct extends AppCompatActivity
     private FloeDataTransmissionSvc dataService;
     boolean DTSvcBound = false;
 
-    private boolean waitMore = false;
+    //private boolean waitMore = false;
 
     //the connected bluetooth devices and their adapter
     private BluetoothManager bleManager;
@@ -55,18 +56,27 @@ public class FloeRecordingAct extends AppCompatActivity
     public static final String LEFT_NAME = "Left";//used to parse device name and choose which device object to operate on
     public static final String RIGHT_NAME = "Right";//same as LEFT_NAME
 
-    volatile private boolean recordingFlag = false;
-
     private static boolean bleDeviceLeftConnected = false;
     private static boolean bleDeviceRightConnected = false;
 
-    //TODO: move BLE connection stuff to main menu
+    /*private BluetoothDevice bleDeviceLeft = null;
+    private BluetoothDevice bleDeviceRight = null;
+
+    public static final String LEFT_NAME = "Left";//used to parse device name and choose which device object to operate on
+    public static final String RIGHT_NAME = "Right";//same as LEFT_NAME*/
+
+    volatile private boolean recordingFlag = false;
+
+    /*private static boolean bleDeviceLeftConnected = false;
+    private static boolean bleDeviceRightConnected = false;*/
+
+    private Thread recordingWorkThread;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        //TODO: set up a basic layout for the recoding activity, including a button to stop/start recording
         setContentView(R.layout.activity_floe_recording);
         final ImageButton button = (ImageButton) findViewById(R.id.button1);
 
@@ -83,7 +93,7 @@ public class FloeRecordingAct extends AppCompatActivity
         //bindService(i, bleConnection, Context.BIND_AUTO_CREATE);
         //Log.d(TAG, "Sent intent to bind to bleSvc");
 
-        //Register the broadcast receiver for DataTransmissionSvc
+        /*//Register the broadcast receiver for DataTransmissionSvc
         LocalBroadcastManager.getInstance(this).registerReceiver(dataTransmissionBroadcastReceiver, makeDataTransmissionIntentFilter());
         //LocalBroadcastManager.getInstance(this).registerReceiver(BLEBroadcastReceiver, makeBLEIntentFilter());
         Log.d(TAG, "Registered broadcast receiver");
@@ -108,7 +118,7 @@ public class FloeRecordingAct extends AppCompatActivity
         //open Device List activity, that scans for devices
         Intent newIntent = new Intent(FloeRecordingAct.this, FloeDeviceListAct.class);
         Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
-        startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+        startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);*/
 
         button.setOnClickListener(new View.OnClickListener() {
         @Override
@@ -126,16 +136,22 @@ public class FloeRecordingAct extends AppCompatActivity
             }
         });
 
-        final Thread t = new Thread(){
+        recordingWorkThread = new Thread()
+        {
             @Override
-            public void run(){
-                while (recordingFlag){
+            public void run()
+            {
+                //start data transfer
+                //dataService.startDataTransfer();
+                Log.d(TAG, "recordingWorkThread started");
+                while (recordingFlag)
+                {
                     recordDataPt();
                     Log.w("FloeRecordingAct","I AM RECORDING!");
                 }
             }
         };
-        t.start();
+
     }
 
     @Override
@@ -147,6 +163,9 @@ public class FloeRecordingAct extends AppCompatActivity
     @Override
     public void onDestroy()
     {
+        recordingFlag=false;
+        dataService.stopDataTransfer();
+
         //set the run duration for the run that has been recorded
         List<FloeDataPt> runPts =  db.getRunDataPts(runNum);
         int runDuration = (int) (runPts.get(runPts.size()-1).getTimeStamp() - runPts.get(0).getTimeStamp());
@@ -157,14 +176,14 @@ public class FloeRecordingAct extends AppCompatActivity
         super.onDestroy();
         Log.d(TAG, "onDestroy()");
 
-        try
+        /*try
         {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(dataTransmissionBroadcastReceiver);
             //LocalBroadcastManager.getInstance(this).unregisterReceiver(BLEBroadcastReceiver);
         } catch (Exception ignore)
         {
             Log.e(TAG, ignore.toString());
-        }
+        }*/
 
         if (DTSvcBound && dataConnection != null)
         {
@@ -173,6 +192,7 @@ public class FloeRecordingAct extends AppCompatActivity
             dataService = null;
         }
         //dataService.stopSelf();
+
     }
 
     @Override
@@ -215,7 +235,7 @@ public class FloeRecordingAct extends AppCompatActivity
         super.onConfigurationChanged(newConfig);
     }
 
-    @Override
+    /*@Override
     public void onActivityResult(int requestCode, int resultCode, Intent data)
     {
         switch(requestCode)
@@ -380,6 +400,7 @@ public class FloeRecordingAct extends AppCompatActivity
                     if(bleDeviceRightConnected)
                     {
                         showMessage("Second boot connected successfully. Enjoy!");
+
                     }else
                     {
                         showMessage("First boot connected successfully. Please connect second boot.");
@@ -393,6 +414,7 @@ public class FloeRecordingAct extends AppCompatActivity
                     if(bleDeviceLeftConnected)
                     {
                         showMessage("Second boot connected successfully. Enjoy!");
+
                     }else
                     {
                         showMessage("First boot connected successfully. Please connect second boot.");
@@ -437,31 +459,108 @@ public class FloeRecordingAct extends AppCompatActivity
             }
 
         }
-    };
+    };*/
 
     private void recordDataPt()
     {
-        //TODO: call this method in the recording activity worker thread
+        //call this method in the recording activity worker thread to perform all necessary recording operations
         Log.d(TAG, "recordDataPt()");
-        FloeDataPt dataPt = dataService.getDataPt();
-
-        if(newRun)
+        byte[][] rawData = dataService.getRawData();
+        if(rawData!=null)
         {
-            //This is only used for the first data point of a run
-            Log.d(TAG, "Creating new run in database");
-            long value = dataPt.getTimeStamp();
-            FloeRun run = new FloeRun(value);
-            runNum = db.createRun(run);
-        }
+            int[] sensorData = extractData(rawData);
+            int[] centreOfPressure = getCoP(sensorData);
+            FloeDataPt dataPt = new FloeDataPt(System.currentTimeMillis(), sensorData, centreOfPressure);
 
-        Log.d(TAG, "Adding point "+dataPtNum+" to run "+runNum);
-        dataPt.setRunID(runNum);
-        dataPt.setDataPtNum(dataPtNum);
-        db.createDataPt(dataPt);
-        dataPtNum++;
+            if (newRun)
+            {
+                //This is only used for the first data point of a run
+                Log.d(TAG, "Creating new run in database");
+                long value = dataPt.getTimeStamp();
+                FloeRun run = new FloeRun(value);
+                runNum = db.createRun(run);
+                newRun=false;
+            }
+
+            Log.d(TAG, "Adding point " + dataPtNum + " to run " + runNum);
+            dataPt.setRunID(runNum);
+            dataPt.setDataPtNum(dataPtNum);
+            db.createDataPt(dataPt);
+            dataPtNum++;
+        }else
+        {
+            Log.d(TAG, "getrawData came back null");
+            android.os.SystemClock.sleep(50);//TODO: check if this works
+        }
     }
 
-    private static IntentFilter makeDataTransmissionIntentFilter()
+    public int[] getCoP(int[] sensorData)
+    {
+        Log.d(TAG, "getCoP()");
+        //assigning sensor values
+        int BL = sensorData[1];
+        int M5L = sensorData[2];
+        int M1L = sensorData[0];
+        int HL = sensorData[3];
+        int BR = sensorData[5];
+        int M5R = sensorData[6];
+        int M1R = sensorData[4];
+        int HR = sensorData[7];
+        //TODO: retrieve weight from database to assign
+        FloeDataPt temp = db.getDataPt(1);
+        int weight = temp.getSensorData(1);
+
+        //TODO: get values for insole distances - relative to 540x444 quadrants
+
+        int dBx = 270;
+        int dBy = 400;
+        int dM5x = 500;
+        int dM5y = 210;
+        int dM1x = 270;
+        int dM1y = 210;
+        int dHx = 360;
+        int dHy = 400;
+
+        int CoPx = ( (BR-BL)*dBx + (M5R-M5L)*dM5x + (M1R-M1L)*dM1x + (HR-HL)*dHx)/weight;
+        int CoPy = ( (BR+BL)*dBy + (M5R+M5L)*dM5y + (M1R+M1L)*dM1y - (HR+HL)*dHy)/weight;
+
+        Log.d(TAG, "BL="+BL+" BR="+BR+"M5L="+M5L+" M5R="+M5R+"M1L="+M1L+" M1R="+M1R+"HL="+HL+" HR="+HR);
+        Log.d(TAG, "CoPx = "+CoPx+" , CoPy = "+CoPy);
+
+        int[] CoP = {CoPx, CoPy};
+        return CoP;
+    }
+
+    private int[] extractData(byte[][] rawData)
+    {
+        Log.d(TAG, "extractData()");
+        int sensorValue;
+        int[] sensorData = new int[8];
+
+        for (int k = 0; k < 2; k++)
+        {
+            for (int j = 0; j < 8; j += 2)
+            {
+                sensorValue = ByteBuffer.wrap(rawData[k]).order(ByteOrder.LITTLE_ENDIAN).getShort(j);//TODO: verify that data is indeed in little-endian
+                sensorData[(k * 4) + (j / 2)] = Linearize(sensorValue);
+                Log.i(TAG, "Unpacked data from sensor " + ((k * 4) + (j / 2)) + ". value = " + sensorValue);
+            }
+        }
+        return sensorData;
+    }
+
+    public int Linearize(int v)
+    {
+        Log.d(TAG, "Linearize("+v+")");
+        double r2 = 10000;
+        //TODO: input voltage value?
+        double inputVoltage = 3;
+        double exponent = 1/0.9;
+
+        return (int) Math.pow((inputVoltage/v - 1)*r2, exponent);
+    }
+
+    /*private static IntentFilter makeDataTransmissionIntentFilter()
     //private static IntentFilter makeBLEIntentFilter()
     {
         IntentFilter intentFilter = new IntentFilter();
@@ -472,7 +571,7 @@ public class FloeRecordingAct extends AppCompatActivity
         intentFilter.addAction(FloeDataTransmissionSvc.ACTION_DATA_AVAILABLE);
         intentFilter.addAction(FloeDataTransmissionSvc.ACTION_DEVICE_READY);
         return intentFilter;
-    }
+    }*/
 
     private ServiceConnection dataConnection = new ServiceConnection()
     {
@@ -489,6 +588,9 @@ public class FloeRecordingAct extends AppCompatActivity
                 Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
             }
+            dataService.startDataTransfer();
+            recordingWorkThread.start();
+            recordingFlag=true;
         }
 
         @Override
@@ -503,7 +605,7 @@ public class FloeRecordingAct extends AppCompatActivity
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
-    public static boolean isDeviceConnected(int deviceNum)
+    /*public static boolean isDeviceConnected(int deviceNum)
     {
         switch(deviceNum)
         {
@@ -515,7 +617,7 @@ public class FloeRecordingAct extends AppCompatActivity
                 Log.e(TAG, "Invalid device number passed to isDeviceConnected()");
                 return false;
         }
-    }
+    }*/
 
     /*
 
