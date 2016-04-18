@@ -77,8 +77,9 @@ public class FloeDataTransmissionSvc extends Service
     private static int dataTransmissionState = STATE_IDLE;
 
     //used to store the raw un-linearized sensor data as soon as it is received
-    byte[] leftBootRawData = new byte[8];
-    byte[] rightBootRawData = new byte[8];
+    volatile byte[] leftBootRawData = new byte[8];
+    volatile byte[] rightBootRawData = new byte[8];
+    volatile private boolean acceptNewData = true;
 
     private int[] sensorData = new int[8];//array to store sensor data temporarily
     private int[] centreOfPressure = new int[2]; //array to store calculated CoP value
@@ -88,8 +89,7 @@ public class FloeDataTransmissionSvc extends Service
     private boolean rightBootDataReceived = false;
     private boolean leftBootTransmitting = false;
     private boolean rightBootTransmitting = false;
-    //private boolean newDataPointReady = false;
-    //private boolean currentlyProcessingData = false;
+
 
     //bluetooth objects required to operate properly
     private BluetoothManager bleManager = null;
@@ -100,6 +100,362 @@ public class FloeDataTransmissionSvc extends Service
     private BluetoothDevice bledeviceRight = null;//maybe we don't need this here
     private String bledeviceRightAddress = null;
     private BluetoothGatt bleGattRight = null;
+
+    private volatile BluetoothGattCallback bleGattCallback = null;
+    private Thread bleWorkerThread = null;
+    private  volatile boolean bleWorkerThreadAlive = true;
+
+    @Override
+    public void onCreate(){
+        bleWorkerThread = performOnBackgroundThread(new bleRunnable());
+    }
+    @Override
+    public void onDestroy(){
+        bleWorkerThreadAlive = false;
+
+    }
+
+    public static Thread performOnBackgroundThread(final Runnable runnable) {
+        final Thread t = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    runnable.run();
+                } finally {
+
+                }
+            }
+        };
+        t.start();
+        return t;
+    }
+
+    private class bleRunnable implements Runnable {
+        @Override
+        public void run() {
+            bleGattCallback = new BluetoothGattCallback()
+            {
+                @Override
+                public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
+                {
+                    super.onConnectionStateChange(gatt, status, newState);
+                    String intentAction;
+                    int deviceNum=0;
+                    Log.d(TAG, "OnConnectionStateChange, newState = "+newState);
+
+                    if (newState == BluetoothProfile.STATE_CONNECTED)
+                    {
+                        intentAction = ACTION_GATT_CONNECTED;
+
+                        if(gatt.equals(bleGattLeft))
+                        {
+                            deviceNum=LEFT_BOOT;
+                            if(bleGattRight!=null)
+                            {
+                                connectionState = STATE_2_CONNECTED;
+                            }else
+                            {
+                                connectionState = STATE_1_CONNECTED;
+                            }
+                            createBroadcast(intentAction, deviceNum);
+                            Log.i(TAG, "Connected to GATT server 1 (left boot).");
+                            // Attempts to discover services after successful connection.
+                            Log.i(TAG, "Attempting to start service discovery:" + bleGattLeft.discoverServices());
+
+                        }else if(gatt.equals(bleGattRight))
+                        {
+                            deviceNum=RIGHT_BOOT;
+                            if(bleGattLeft!=null)
+                            {
+                                connectionState = STATE_2_CONNECTED;
+                            }else
+                            {
+                                connectionState = STATE_1_CONNECTED;
+                            }
+                            createBroadcast(intentAction, deviceNum);
+                            Log.i(TAG, "Connected to GATT server 2 (right boot).");
+                            // Attempts to discover services after successful connection.
+                            Log.i(TAG, "Attempting to start service discovery:" + bleGattRight.discoverServices());
+
+                        }else
+                        {
+                            //somehow the connected gatt is neither device 1 nor 2
+                            Log.e(TAG, "Connected to GATT Server that is not bleGattLeft nor bleGattRight");
+                        }
+
+                    } else if (newState == BluetoothProfile.STATE_DISCONNECTED)
+                    {
+                        intentAction = ACTION_GATT_DISCONNECTED;
+
+                        if(bleGattLeft==null && bleGattRight==null)
+                        {
+                            connectionState = STATE_DISCONNECTED;
+                            Log.i(TAG, "Disconnected from last GATT server.");
+
+                            switch(FloeDataTransmissionSvc.getDataTransmissionState())
+                            {
+                                //TODO: modify RTFeedback and Calibration Activities to include isDeviceConnected(), then un-comment
+                        /*case FloeDataTransmissionSvc.STATE_RT_FEEDBACK:
+                            if(FloeRTFeedbackAct.isDeviceConnected(LEFT_BOOT))
+                            {
+                                deviceNum=LEFT_BOOT;
+                            }else if(FloeRTFeedbackAct.isDeviceConnected(RIGHT_BOOT))
+                            {
+                                deviceNum=RIGHT_BOOT;
+                            }
+                            break;*/
+
+                                case FloeDataTransmissionSvc.STATE_RECORDING:
+                                    if(FloeRecordingAct.isDeviceConnected(LEFT_BOOT))
+                                    {
+                                        deviceNum=LEFT_BOOT;
+                                    }else if(FloeRecordingAct.isDeviceConnected(RIGHT_BOOT))
+                                    {
+                                        deviceNum=RIGHT_BOOT;
+                                    }
+                                    break;
+
+                        /*case FloeDataTransmissionSvc.STATE_CALIBRATING:
+                            if(FloeCalibrationAct.isDeviceConnected(LEFT_BOOT))
+                            {
+                                deviceNum=LEFT_BOOT;
+                            }else if(FloeCalibrationAct.isDeviceConnected(RIGHT_BOOT))
+                            {
+                                deviceNum=RIGHT_BOOT;
+                            }
+                            break;*/
+
+                                default:
+                                    break;
+                            }
+
+                        }else if(bleGattLeft!=null)
+                        {
+                            connectionState = STATE_1_CONNECTED;
+                            deviceNum=RIGHT_BOOT;
+                            Log.i(TAG, "Disconnected from GATT server 2 (right boot.");
+
+                        }else if(bleGattRight!=null)
+                        {
+                            connectionState = STATE_1_CONNECTED;
+                            deviceNum=LEFT_BOOT;
+                            Log.i(TAG, "Disconnected from GATT server 1 (left boot).");
+
+                        }else
+                        {
+                            Log.e(TAG, "Disconnected from a GATT server, but bleGattLeft and bleGattRight still not null");
+                        }
+
+                        createBroadcast(intentAction, deviceNum);
+                    }
+                }
+
+                @Override
+                public void onServicesDiscovered(BluetoothGatt gatt, int status)
+                {
+                    int deviceNum=0;
+                    Log.d(TAG, "onServicesDiscovered()");
+                    if (status == BluetoothGatt.GATT_SUCCESS)
+                    {
+                        if(gatt.equals(bleGattLeft))
+                        {
+                            Log.w(TAG, "bleGattLeft = " + bleGattLeft);
+                            deviceNum=LEFT_BOOT;
+
+                        }else if(gatt.equals(bleGattRight))
+                        {
+                            Log.w(TAG, "bleGattRight = " + bleGattRight);
+                            deviceNum=RIGHT_BOOT;
+
+                        }else
+                        {
+                            Log.e(TAG, "onServicesDiscovered received GATT_SUCCESS, but bleGattLeft and bleGattRight are not the discovered service");
+                        }
+                        createBroadcast(ACTION_GATT_SERVICES_DISCOVERED, deviceNum);
+
+                    } else
+                    {
+                        Log.w(TAG, "onServicesDiscovered received: " + status);
+                    }
+                }
+
+                @Override
+                public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
+                {
+                    Log.d(TAG, "onCharacteristicRead()");
+                    if (status == BluetoothGatt.GATT_SUCCESS)
+                    {
+                        createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
+                        //TODO: see if we need to add more here
+                        //probably not
+                    }
+                }
+
+                @Override
+                public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
+                {
+
+                    if(dataTransmissionState == STATE_IDLE)
+                    {
+                        //We don't want to do anything with the data
+                        return;
+                    }
+                    Log.d(TAG, "onCharacteristicChanged(");
+                    byte[] receivedChar = characteristic.getValue();
+                    Log.d(TAG, "characteristic: "+receivedChar[0]+" "+receivedChar[1]+" "+receivedChar[2]+" "+receivedChar[3]+" "+receivedChar[4]+" "+receivedChar[5]+" "+receivedChar[6]+" "+receivedChar[7]+" "+receivedChar[8]);
+
+                    if(receivedChar[0] == (byte) 0x4C)
+                    {
+                        //data received from left BMH
+                        Log.d(TAG, "Received data from left BMH");
+                        for(int i=1;i<9;i++)
+                        {
+                            leftBootRawData[i-1] = receivedChar[i];
+                        }
+                        leftBootDataReceived=true;
+
+                    }else if(receivedChar[0] == (byte) 0x52)
+                    {
+                        Log.d(TAG, "Received data from right BMH");
+                        for(int i=1;i<9;i++)
+                        {
+                            rightBootRawData[i-1] = receivedChar[i];
+                        }
+                        rightBootDataReceived=true;
+
+                    }else
+                    {
+                        //Invalid header
+                        Log.e(TAG, "Invalid header code");
+                    }
+
+                    Log.d(TAG, "onCharacteristicChanged() completed correctly");
+
+                    //extractData(characteristic.getValue());
+
+                    //createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
+                }
+
+                @Override
+                public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status)
+                {
+                    Log.d(TAG, "onDescriptorWrite()");
+                    //check if both devices are ready, then send the order to start transmission
+
+                    if(bleGattLeft!=null)
+                    {
+                        if(bleGattRight != null)
+                        {
+                            createBroadcast(ACTION_DEVICE_READY, RIGHT_BOOT);
+                            Log.d(TAG, "starting data transfer");
+                            startDataTransfer();//TODO: make sure this is in the right place, potentially put in individual activities
+                        }else
+                        {
+                            //send broadcast for activity to prompt choice for second boot
+                            createBroadcast(ACTION_DEVICE_READY, LEFT_BOOT);
+                        }
+                    }else if(bleGattRight != null)
+                    {
+                        //send broadcast for activity to prompt choice for second boot
+                        createBroadcast(ACTION_DEVICE_READY, RIGHT_BOOT);
+                    }
+                    else
+                    {
+                        Log.e(TAG, "Both Gatts are still null");
+                    }
+                }
+
+                @Override
+                public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
+                {
+                    Log.d(TAG, "onCharacteristicWrite()");
+                    byte[] sChar = characteristic.getValue();
+                    char char1 = (char) sChar[0];
+                    char char2 = (char) sChar[1];
+
+                    if(char1 == 'L')
+                    {
+                        if(char2 == 'L')
+                        {
+                            Log.d(TAG, "Left boot now transmitting data");
+                            if (rightBootTransmitting)
+                            {
+                                //both boots are transmitting data
+                                Log.d(TAG, "Both boots now transmitting data");
+                            } else
+                            {
+                                byte[] value = RIGHT_ENABLE.getBytes();//enable left boot
+                                Log.d(TAG, "writeRXCharacteristic (value " + RIGHT_ENABLE + ", deviceNum RIGHT_BOOT)");
+                                writeRXCharacteristic(value, RIGHT_BOOT);
+                            }
+
+                        }else if(char2 == 'D')
+                        {
+                            Log.d(TAG, "Left boot no longer transmitting data");
+                            if (rightBootTransmitting)
+                            {
+                                //both boots are transmitting data
+                                Log.d(TAG, "Right boot still transmitting data");
+                                byte[] value = RIGHT_DISABLE.getBytes();//enable left boot
+                                Log.d(TAG, "writeRXCharacteristic (value " + RIGHT_DISABLE + ", deviceNum RIGHT_BOOT)");
+                                writeRXCharacteristic(value, RIGHT_BOOT);
+                            } else
+                            {
+                                Log.d(TAG, "No boot still transmitting data");
+                            }
+
+                        }else
+                        {
+                            Log.e(TAG, "Invalid characteristic written to a device: "+ char1 + " " + char2);
+                        }
+                    }else if(char1 == 'R')
+                    {
+
+                        if(char2 == 'D')
+                        {
+                            Log.d(TAG, "Right boot no longer transmitting data");
+                            if (leftBootTransmitting)
+                            {
+                                //both boots are transmitting data
+                                Log.d(TAG, "Left boot still transmitting data");
+                                byte[] value = LEFT_DISABLE.getBytes();//enable left boot
+                                Log.d(TAG, "writeRXCharacteristic (value " + LEFT_DISABLE + ", deviceNum RIGHT_BOOT)");
+                                writeRXCharacteristic(value, LEFT_BOOT);
+                            } else
+                            {
+                                Log.d(TAG, "No boot still transmitting data");
+                            }
+                        }else if(char2 == 'E')
+                        {
+                            Log.d(TAG, "Right boot now transmitting data");
+                            if (leftBootTransmitting)
+                            {
+                                //both boots are transmitting data
+                                Log.d(TAG, "Both boots now transmitting data");
+                            } else
+                            {
+                                byte[] value = LEFT_ENABLE.getBytes();//enable left boot
+                                Log.d(TAG, "writeRXCharacteristic (value " + LEFT_ENABLE + ", deviceNum RIGHT_BOOT)");
+                                writeRXCharacteristic(value, LEFT_BOOT);
+                            }
+
+                        }else
+                        {
+                            Log.e(TAG, "Invalid characteristic written to a device: "+ char1 + " " + char2);
+                        }
+
+                    }else
+                    {
+                        Log.e(TAG, "Invalid characteristic written to a device: "+ char1 + " " + char2);
+                    }
+                }
+            };
+            while (bleWorkerThreadAlive) {
+                // WAIT
+            }
+
+        }
+    }
 
     /*
     FloeBLESvc bleService;
@@ -240,7 +596,7 @@ public class FloeDataTransmissionSvc extends Service
         return (int) Math.pow((inputVoltage/v - 1)*r2, exponent);
     }
 
-    private final BluetoothGattCallback bleGattCallback = new BluetoothGattCallback()
+/*    private final BluetoothGattCallback bleGattCallback = new BluetoothGattCallback()
     {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
@@ -302,7 +658,7 @@ public class FloeDataTransmissionSvc extends Service
                     switch(FloeDataTransmissionSvc.getDataTransmissionState())
                     {
                         //TODO: modify RTFeedback and Calibration Activities to include isDeviceConnected(), then un-comment
-                        /*case FloeDataTransmissionSvc.STATE_RT_FEEDBACK:
+                        *//*case FloeDataTransmissionSvc.STATE_RT_FEEDBACK:
                             if(FloeRTFeedbackAct.isDeviceConnected(LEFT_BOOT))
                             {
                                 deviceNum=LEFT_BOOT;
@@ -310,7 +666,7 @@ public class FloeDataTransmissionSvc extends Service
                             {
                                 deviceNum=RIGHT_BOOT;
                             }
-                            break;*/
+                            break;*//*
 
                         case FloeDataTransmissionSvc.STATE_RECORDING:
                             if(FloeRecordingAct.isDeviceConnected(LEFT_BOOT))
@@ -322,7 +678,7 @@ public class FloeDataTransmissionSvc extends Service
                             }
                             break;
 
-                        /*case FloeDataTransmissionSvc.STATE_CALIBRATING:
+                        *//*case FloeDataTransmissionSvc.STATE_CALIBRATING:
                             if(FloeCalibrationAct.isDeviceConnected(LEFT_BOOT))
                             {
                                 deviceNum=LEFT_BOOT;
@@ -330,7 +686,7 @@ public class FloeDataTransmissionSvc extends Service
                             {
                                 deviceNum=RIGHT_BOOT;
                             }
-                            break;*/
+                            break;*//*
 
                         default:
                             break;
@@ -556,7 +912,7 @@ public class FloeDataTransmissionSvc extends Service
                 Log.e(TAG, "Invalid characteristic written to a device: "+ char1 + " " + char2);
             }
         }
-    };
+    };*/
 
     public int[] getSensorData()
     {
