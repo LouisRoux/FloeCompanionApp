@@ -18,6 +18,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 import java.util.List;
 import java.nio.*;
@@ -79,6 +80,7 @@ public class FloeRecordingAct extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_floe_recording);
         final ImageButton button = (ImageButton) findViewById(R.id.button1);
+        final TextView recordingState = (TextView) findViewById(R.id.recordingState);
 
         db = new FloeRunDatabase(getApplicationContext());
         bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -127,11 +129,13 @@ public class FloeRecordingAct extends AppCompatActivity
                     button.setImageResource(R.drawable.stop1);
                     recordingFlag = false;
                     Log.w("FloeRecordingAct","Set to not recording.");
+                    recordingState.setText("Press to start recording!");
                 }
                 else{
                     button.setImageResource(R.drawable.record1);
                     recordingFlag = true;
                     Log.w("FloeRecordingAct","Set to recording.");
+                    recordingState.setText("Recording!");
                 }
             }
         });
