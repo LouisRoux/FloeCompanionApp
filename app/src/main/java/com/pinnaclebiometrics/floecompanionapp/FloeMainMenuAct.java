@@ -69,7 +69,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
 
         final List<FloeRun> allRuns = db.getAllRuns();
 
-        //test - adding run into database
+        /*//test - adding run into database
         //TODO: remove testing stuff from here
         if(db.getAllRuns().size() < 1)
         {
@@ -87,7 +87,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
             weightPt.setDataPtID(1);
             db.updateDataPt(weightPt);
             Log.w("FloeMainMenuAct", "Weight value stored in db at DataPtID=1: "+db.getDataPt(1).getSensorData(0));
-        }
+        }*/
 
 
 
@@ -96,7 +96,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
         bleAdapter = bleManager.getAdapter();
         Log.d(TAG, "initialized Bluetooth Manager and Adapter");
 
-        //Start Data Transmission Service, which in turn starts BLE service. Then, bind to BLESvc as well
+        //Start Data Transmission Service
         Intent i = new Intent(this, FloeDataTransmissionSvc.class);
         bindService(i, dataConnection, Context.BIND_AUTO_CREATE);
         Log.d(TAG, "Sent intent to bind to dataTransmissionSvc");
@@ -130,63 +130,84 @@ public class FloeMainMenuAct extends AppCompatActivity {
 
         //end test
 
-        calBtn.setOnClickListener(new View.OnClickListener() {
+        calBtn.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v)
+            {
                 startActivity(new Intent(FloeMainMenuAct.this,FloeCalibrationAct.class));
                 Log.d("FloeMainMenuAct", "Calibration Activity started'");
             }
         });
 
-        rtBtn.setOnClickListener(new View.OnClickListener() {
+        rtBtn.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
-                if (db.getAllRuns().size() < 1){
+            public void onClick(View v)
+            {
+                if (db.getAllRuns().size() < 1)
+                {
                     Toast.makeText(getApplicationContext(),
                             "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
                 }
-                else{
+                else
+                {
                     startActivity(new Intent(FloeMainMenuAct.this, FloeRTFeedbackAct.class));
                     Log.d("FloeMainMenuAct", "Realtime feedback activity started'");
                 }
             }
         });
 
-        recBtn.setOnClickListener(new View.OnClickListener() {
+        recBtn.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
-                if (db.getAllRuns().size() < 1){
+            public void onClick(View v)
+            {
+                if (db.getAllRuns().size() < 1)
+                {
                     Toast.makeText(getApplicationContext(),
                             "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
                 }
-                else{
+                else
+                {
                     startActivity(new Intent(FloeMainMenuAct.this, FloeRecordingAct.class));
                     Log.d("FloeMainMenuAct", "Record activity started'");
                 }
             }
         });
 
-        revBtn.setOnClickListener(new View.OnClickListener() {
+        revBtn.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
-                if (db.getAllRuns().size() < 1){
+            public void onClick(View v)
+            {
+                if (db.getAllRuns().size() < 1)
+                {
                     Toast.makeText(getApplicationContext(),
                             "Please calibrate weight first!", Toast.LENGTH_SHORT).show();
                     Log.w("FloeMainMenuAct", "Database is empty; must calibrate weight first.");
                 }
-                else{
+                else
+                {
                     startActivity(new Intent(FloeMainMenuAct.this, FloeReviewListAct.class));
                     Log.d("FloeMainMenuAct", "Review stuff activity started'");
                 }
             }
         });
 
-        reconnectBtn.setOnClickListener(new View.OnClickListener() {
+        reconnectBtn.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
-
+            public void onClick(View v)
+            {
+                if(!bleDeviceLeftConnected || !bleDeviceRightConnected)
+                {
+                    Intent newIntent = new Intent(FloeMainMenuAct.this, FloeDeviceListAct.class);
+                    Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
+                    startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+                }
                 //TODO: DO IT, LOUIS
             }
         });
@@ -366,7 +387,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
                 switch(deviceNum)
                 {
                     case FloeDataTransmissionSvc.LEFT_BOOT:
-                        showMessage("Connection to "+RIGHT_NAME+" Boot was lost unexpectedly. Please reconnect.");
+                        showMessage("Connection to "+LEFT_NAME+" Boot was lost unexpectedly. Please reconnect.");
                         bleDeviceLeftConnected=false;
                         break;
 

@@ -71,7 +71,7 @@ public class FloeRecordingAct extends AppCompatActivity
     /*private static boolean bleDeviceLeftConnected = false;
     private static boolean bleDeviceRightConnected = false;*/
 
-    private Thread recordingWorkThread;
+    private Thread recordingWorkThread=null;
 
 
     @Override
@@ -122,40 +122,80 @@ public class FloeRecordingAct extends AppCompatActivity
         Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
         startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);*/
 
-        button.setOnClickListener(new View.OnClickListener() {
-        @Override
-            public void onClick(View v) {
-                if (recordingFlag){
+        button.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                if (recordingFlag)
+                {
                     button.setImageResource(R.drawable.stop1);
                     recordingFlag = false;
                     Log.w("FloeRecordingAct","Set to not recording.");
                     recordingState.setText("Press to start recording!");
+
+                    dataService.stopDataTransfer();
+                    //recordingWorkThread.interrupt();
+
+                    //set the run duration for the run that has been recorded
+                    List<FloeDataPt> runPts =  db.getRunDataPts(runNum);
+                    if(runPts.get(0)!=null)
+                    {
+                        int runDuration = (int) (runPts.get(runPts.size() - 1).getTimeStamp() - runPts.get(0).getTimeStamp());
+                        FloeRun run = db.getRun(runNum);
+                        run.setRunDuration(runDuration);
+                        db.updateRun(run);
+                        newRun=true;
+                    }
+
+                    while(recordingWorkThread.isAlive())
+                    {
+
+                    }
+                    recordingWorkThread=null;
                 }
-                else{
-                    button.setImageResource(R.drawable.record1);
-                    recordingFlag = true;
-                    Log.w("FloeRecordingAct","Set to recording.");
-                    recordingState.setText("Recording!");
+                else
+                {
+                    if(DTSvcBound)
+                    {
+                        button.setImageResource(R.drawable.record1);
+                        Log.w("FloeRecordingAct", "Set to recording.");
+                        recordingState.setText("Recording!");
+
+
+                        dataService.startDataTransfer();
+                        recordingFlag = true;
+                        createNewRecordingWorkerThread();
+                    }
+
                 }
             }
         });
 
-        recordingWorkThread = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                //start data transfer
-                //dataService.startDataTransfer();
-                Log.d(TAG, "recordingWorkThread started");
-                while (recordingFlag)
-                {
-                    recordDataPt();
-                    Log.w("FloeRecordingAct","I AM RECORDING!");
-                }
-            }
-        };
 
+
+    }
+
+    private void createNewRecordingWorkerThread()
+    {
+        if (recordingWorkThread == null)
+        {
+            recordingWorkThread = new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    Log.d(TAG, "recordingWorkThread started");
+                    while (recordingFlag)
+                    {
+                        recordDataPt();
+                        Log.w("FloeRecordingAct", "I AM RECORDING!");
+                    }
+                    return;
+                }
+            };
+            recordingWorkThread.start();
+        }
     }
 
     @Override
@@ -172,10 +212,13 @@ public class FloeRecordingAct extends AppCompatActivity
 
         //set the run duration for the run that has been recorded
         List<FloeDataPt> runPts =  db.getRunDataPts(runNum);
-        int runDuration = (int) (runPts.get(runPts.size()-1).getTimeStamp() - runPts.get(0).getTimeStamp());
-        FloeRun run = db.getRun(runNum);
-        run.setRunDuration(runDuration);
-        db.updateRun(run);
+        if(runPts.get(0)!=null)
+        {
+            int runDuration = (int) (runPts.get(runPts.size() - 1).getTimeStamp() - runPts.get(0).getTimeStamp());
+            FloeRun run = db.getRun(runNum);
+            run.setRunDuration(runDuration);
+            db.updateRun(run);
+        }
 
         super.onDestroy();
         Log.d(TAG, "onDestroy()");
@@ -600,9 +643,6 @@ public class FloeRecordingAct extends AppCompatActivity
                 Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
             }
-            dataService.startDataTransfer();
-            recordingWorkThread.start();
-            recordingFlag=true;
         }
 
         @Override
