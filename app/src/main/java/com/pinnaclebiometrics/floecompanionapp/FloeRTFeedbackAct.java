@@ -98,28 +98,28 @@ public class FloeRTFeedbackAct extends AppCompatActivity {
             yellow.setColor(Color.YELLOW);
             yellow.setStyle(Paint.Style.STROKE);
             yellow.setStrokeWidth(3);
-            if(x < 270) {
+            if(x < 360) {
                 canvas.drawLine(150,0,150,canvas.getHeight()/2,yellow);
             }
-            if(x > 770) {
+            if(x > 720) {
                 canvas.drawLine(930,0,930,canvas.getHeight()/2,yellow);
             }
-            if(y < 222) {
+            if(y < 296) {
                 canvas.drawLine(0,126,1080,126,yellow);
             }
-            if(y > 626) {
+            if(y > 592) {
                 canvas.drawLine(0,762,1080,762,yellow);
             }
-            if(x < 135) {
+            if(x < 270) {
                 canvas.drawLine(135,0,135,canvas.getHeight()/2,red);
             }
-            if(x > 905) {
+            if(x > 810) {
                 canvas.drawLine(945,0,945,canvas.getHeight()/2,red);
             }
-            if(y < 111) {
+            if(y < 222) {
                 canvas.drawLine(0,111,1080,111,red);
             }
-            if(y > 737) {
+            if(y > 666) {
                 canvas.drawLine(0,777,1080,777,red);
             }
             int cx = (canvas.getWidth() - logo.getWidth()) >> 1;
