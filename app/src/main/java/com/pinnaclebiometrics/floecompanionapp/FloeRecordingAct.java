@@ -1,6 +1,5 @@
 package com.pinnaclebiometrics.floecompanionapp;
 
-import android.animation.FloatEvaluator;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -12,18 +11,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
-import android.hardware.camera2.params.BlackLevelPattern;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.TextView;
+import android.widget.ImageButton;
 import android.widget.Toast;
-
-import com.pinnaclebiometrics.floecompanionapp.FloeDataTransmissionSvc.FloeDTBinder;
-
 import java.util.List;
 
 public class FloeRecordingAct extends AppCompatActivity
@@ -47,19 +42,26 @@ public class FloeRecordingAct extends AppCompatActivity
 
     private FloeDataTransmissionSvc dataService;
     boolean DTSvcBound = false;
-    //private FloeBLESvc bleService;
-    //boolean BLESvcBound = false;
 
     private boolean waitMore = false;
 
     //the connected bluetooth devices and their adapter
     private BluetoothManager bleManager;
     private BluetoothAdapter bleAdapter;
+<<<<<<< Updated upstream
     private BluetoothDevice bleDeviceLeft = null;
     private BluetoothDevice bleDeviceRight = null;
 
     public static final String LEFT_NAME = "Left";//used to parse device name and choose which device object to operate on
     public static final String RIGHT_NAME = "Right";//same as LEFT_NAME
+=======
+    private BluetoothDevice bleDevice1 = null;
+    private BluetoothDevice bleDevice2 = null;
+
+    volatile private boolean recordingFlag = false;
+
+    private boolean waitMore;
+>>>>>>> Stashed changes
 
     private static boolean bleDeviceLeftConnected = false;
     private static boolean bleDeviceRightConnected = false;
@@ -69,6 +71,8 @@ public class FloeRecordingAct extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
+        final ImageButton button = (ImageButton) findViewById(R.id.button1);
+
         super.onCreate(savedInstanceState);
         //TODO: set up a basic layout for the recoding activity, including a button to stop/start recording
         setContentView(R.layout.activity_floe_recording);
@@ -112,6 +116,30 @@ public class FloeRecordingAct extends AppCompatActivity
         Intent newIntent = new Intent(FloeRecordingAct.this, FloeDeviceListAct.class);
         Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
         startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+
+        button.setOnClickListener(new View.OnClickListener() {
+        @Override
+            public void onClick(View v) {
+                if (recordingFlag){
+                    button.setBackgroundResource(R.drawable.stop1);
+                    recordingFlag = false;
+                }
+                else{
+                    button.setBackgroundResource(R.drawable.record1);
+                    recordingFlag = true;
+                }
+            }
+        });
+
+        final Thread t = new Thread(){
+            @Override
+            public void run(){
+                while (recordingFlag){
+                    recordDataPt();
+                }
+            }
+        };
+        t.start();
     }
 
     @Override
