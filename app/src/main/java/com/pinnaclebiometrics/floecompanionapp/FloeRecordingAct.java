@@ -49,6 +49,16 @@ public class FloeRecordingAct extends AppCompatActivity
     //the connected bluetooth devices and their adapter
     private BluetoothManager bleManager;
     private BluetoothAdapter bleAdapter;
+
+    private BluetoothDevice bleDeviceLeft = null;
+    private BluetoothDevice bleDeviceRight = null;
+
+    public static final String LEFT_NAME = "Left";//used to parse device name and choose which device object to operate on
+    public static final String RIGHT_NAME = "Right";//same as LEFT_NAME
+
+    private static boolean bleDeviceLeftConnected = false;
+    private static boolean bleDeviceRightConnected = false;
+
     /*private BluetoothDevice bleDeviceLeft = null;
     private BluetoothDevice bleDeviceRight = null;
 
@@ -110,19 +120,18 @@ public class FloeRecordingAct extends AppCompatActivity
         Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
         startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);*/
 
-        button.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View v)
-            {
-                if (recordingFlag)
-                {
-                    button.setBackgroundResource(R.drawable.stop1);
+        button.setOnClickListener(new View.OnClickListener() {
+        @Override
+            public void onClick(View v) {
+                if (recordingFlag){
+                    button.setImageResource(R.drawable.stop1);
                     recordingFlag = false;
-                } else
-                {
-                    button.setBackgroundResource(R.drawable.record1);
+                    Log.w("FloeRecordingAct","Set to not recording.");
+                }
+                else{
+                    button.setImageResource(R.drawable.record1);
                     recordingFlag = true;
+                    Log.w("FloeRecordingAct","Set to recording.");
                 }
             }
         });
@@ -138,6 +147,7 @@ public class FloeRecordingAct extends AppCompatActivity
                 while (recordingFlag)
                 {
                     recordDataPt();
+                    Log.w("FloeRecordingAct","I AM RECORDING!");
                 }
             }
         };
@@ -174,15 +184,6 @@ public class FloeRecordingAct extends AppCompatActivity
         {
             Log.e(TAG, ignore.toString());
         }*/
-
-        /*
-        if (BLESvcBound && bleConnection != null)
-        {
-            unbindService(bleConnection);
-            BLESvcBound = false;
-            bleService = null;
-        }
-        */
 
         if (DTSvcBound && dataConnection != null)
         {

@@ -17,6 +17,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.Toast;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class FloeReviewListAct extends AppCompatActivity {
@@ -29,9 +30,8 @@ public class FloeReviewListAct extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_floe_review_list);
 
-
-/*//test - inserting new run
-        FloeRun testRun = new FloeRun(1000000000);
+//test - inserting new run
+/*        FloeRun testRun = new FloeRun(1000000000);
         testRun.setRunDuration(0);
         testRun.setRunName("yumyumrun#"+db.getAllRuns().size());
 
@@ -78,6 +78,10 @@ public class FloeReviewListAct extends AppCompatActivity {
             Log.w("FloeReviewListAct"," " +runs.get(i)+" is added at i = "+i);
         }
         runs.remove(0);
+
+        //put newest on top of list
+        Collections.reverse(runs);
+
         ArrayAdapter<FloeRun> adapter = new ArrayAdapter<FloeRun>(this, android.R.layout.simple_list_item_1,runs);
         final ListView reviewList = (ListView) findViewById(R.id.reviewList);
 
