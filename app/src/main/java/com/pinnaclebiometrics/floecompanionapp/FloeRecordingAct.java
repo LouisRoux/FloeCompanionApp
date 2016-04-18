@@ -48,20 +48,14 @@ public class FloeRecordingAct extends AppCompatActivity
     //the connected bluetooth devices and their adapter
     private BluetoothManager bleManager;
     private BluetoothAdapter bleAdapter;
-<<<<<<< Updated upstream
+
     private BluetoothDevice bleDeviceLeft = null;
     private BluetoothDevice bleDeviceRight = null;
 
     public static final String LEFT_NAME = "Left";//used to parse device name and choose which device object to operate on
     public static final String RIGHT_NAME = "Right";//same as LEFT_NAME
-=======
-    private BluetoothDevice bleDevice1 = null;
-    private BluetoothDevice bleDevice2 = null;
 
     volatile private boolean recordingFlag = false;
-
-    private boolean waitMore;
->>>>>>> Stashed changes
 
     private static boolean bleDeviceLeftConnected = false;
     private static boolean bleDeviceRightConnected = false;
@@ -71,11 +65,10 @@ public class FloeRecordingAct extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
-        final ImageButton button = (ImageButton) findViewById(R.id.button1);
-
         super.onCreate(savedInstanceState);
         //TODO: set up a basic layout for the recoding activity, including a button to stop/start recording
         setContentView(R.layout.activity_floe_recording);
+        final ImageButton button = (ImageButton) findViewById(R.id.button1);
 
         db = new FloeRunDatabase(getApplicationContext());
         bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -121,12 +114,14 @@ public class FloeRecordingAct extends AppCompatActivity
         @Override
             public void onClick(View v) {
                 if (recordingFlag){
-                    button.setBackgroundResource(R.drawable.stop1);
+                    button.setImageResource(R.drawable.stop1);
                     recordingFlag = false;
+                    Log.w("FloeRecordingAct","Set to not recording.");
                 }
                 else{
-                    button.setBackgroundResource(R.drawable.record1);
+                    button.setImageResource(R.drawable.record1);
                     recordingFlag = true;
+                    Log.w("FloeRecordingAct","Set to recording.");
                 }
             }
         });
@@ -136,6 +131,7 @@ public class FloeRecordingAct extends AppCompatActivity
             public void run(){
                 while (recordingFlag){
                     recordDataPt();
+                    Log.w("FloeRecordingAct","I AM RECORDING!");
                 }
             }
         };
@@ -169,15 +165,6 @@ public class FloeRecordingAct extends AppCompatActivity
         {
             Log.e(TAG, ignore.toString());
         }
-
-        /*
-        if (BLESvcBound && bleConnection != null)
-        {
-            unbindService(bleConnection);
-            BLESvcBound = false;
-            bleService = null;
-        }
-        */
 
         if (DTSvcBound && dataConnection != null)
         {
