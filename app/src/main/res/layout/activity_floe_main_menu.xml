@@ -32,9 +32,10 @@
             android:text="Calibrate Weight"
             android:id="@+id/calBtn"
             android:alpha="100"
-            android:layout_centerVertical="true"
-            android:layout_centerHorizontal="true"
-            android:layout_margin="10dp" />
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@+id/imageView"
+            android:layout_alignStart="@+id/rtBtn" />
 
         <Button
             android:layout_width="fill_parent"
@@ -43,7 +44,7 @@
             android:id="@+id/rtBtn"
             android:layout_below="@+id/calBtn"
             android:layout_centerHorizontal="true"
-            android:layout_margin="10dp" />
+            android:layout_margin="5dp" />
 
         <Button
             android:layout_width="fill_parent"
@@ -52,7 +53,7 @@
             android:id="@+id/recBtn"
             android:layout_below="@+id/rtBtn"
             android:layout_centerHorizontal="true"
-            android:layout_margin="10dp" />
+            android:layout_margin="5dp" />
 
         <Button
             android:layout_width="fill_parent"
@@ -61,7 +62,16 @@
             android:id="@+id/revBtn"
             android:layout_below="@+id/recBtn"
             android:layout_centerHorizontal="true"
-            android:layout_margin="10dp" />
+            android:layout_margin="5dp" />
+
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Reconnect BlueTooth"
+            android:id="@+id/reconnectBtn"
+            android:layout_below="@+id/revBtn"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="5dp" />
 
         <ImageView
             android:layout_width="wrap_content"

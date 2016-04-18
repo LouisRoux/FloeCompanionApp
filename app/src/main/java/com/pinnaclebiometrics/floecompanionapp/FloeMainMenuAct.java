@@ -65,6 +65,7 @@ public class FloeMainMenuAct extends AppCompatActivity {
         Button rtBtn = (Button) findViewById(R.id.rtBtn);
         Button recBtn = (Button) findViewById(R.id.recBtn);
         Button revBtn = (Button) findViewById(R.id.revBtn);
+        Button reconnectBtn = (Button) findViewById(R.id.reconnectBtn);
 
         final List<FloeRun> allRuns = db.getAllRuns();
 
@@ -179,6 +180,14 @@ public class FloeMainMenuAct extends AppCompatActivity {
                     startActivity(new Intent(FloeMainMenuAct.this, FloeReviewListAct.class));
                     Log.d("FloeMainMenuAct", "Review stuff activity started'");
                 }
+            }
+        });
+
+        reconnectBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                //TODO: DO IT, LOUIS
             }
         });
 
