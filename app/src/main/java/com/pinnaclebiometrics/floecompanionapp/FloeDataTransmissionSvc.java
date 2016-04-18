@@ -600,21 +600,15 @@ public class FloeDataTransmissionSvc extends Service
         return (int) Math.pow((inputVoltage/v - 1)*r2, exponent);
     }*/
 
-    public synchronized byte[] getRawData()
+    public synchronized byte[][] getRawData()
     {
         Log.d(TAG, "getRawData()");
         if(leftBootDataReceived && rightBootDataReceived)
         {
-            byte[] rawData = new byte[16];
+            byte[][] rawData = new byte[2][8];
 
-            for (int i = 0; i < 8; i++)
-            {
-                rawData[i]=leftBootRawData[i];
-            }
-            for (int i=1;i<8;i++)
-            {
-                rawData[i+8]=rightBootRawData[i];
-            }
+            rawData[0] = leftBootRawData;
+            rawData[1] = rightBootRawData;
 
             leftBootDataReceived=false;
             rightBootDataReceived=false;

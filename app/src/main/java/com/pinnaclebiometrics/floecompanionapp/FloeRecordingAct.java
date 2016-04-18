@@ -20,6 +20,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 import java.util.List;
+import java.nio.*;
 
 public class FloeRecordingAct extends AppCompatActivity
 {
@@ -59,15 +60,16 @@ public class FloeRecordingAct extends AppCompatActivity
     private static boolean bleDeviceLeftConnected = false;
     private static boolean bleDeviceRightConnected = false;
 
+    private Thread recordingWorkThread;
+
     //TODO: move BLE connection stuff to main menu
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
-        final ImageButton button = (ImageButton) findViewById(R.id.button1);
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_floe_recording);
+        final ImageButton button = (ImageButton) findViewById(R.id.button1);
 
         db = new FloeRunDatabase(getApplicationContext());
         bleManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -126,7 +128,7 @@ public class FloeRecordingAct extends AppCompatActivity
             }
         });
 
-        final Thread t = new Thread()
+        recordingWorkThread = new Thread()
         {
             @Override
             public void run()
@@ -140,7 +142,7 @@ public class FloeRecordingAct extends AppCompatActivity
                 }
             }
         };
-        t.start();
+        //recordingWorkThread.start();
     }
 
     @Override
@@ -394,6 +396,11 @@ public class FloeRecordingAct extends AppCompatActivity
                     if(bleDeviceRightConnected)
                     {
                         showMessage("Second boot connected successfully. Enjoy!");
+                        if(!recordingWorkThread.isAlive())
+                        {
+                            recordingWorkThread.start();
+                        }
+
                     }else
                     {
                         showMessage("First boot connected successfully. Please connect second boot.");
@@ -407,6 +414,11 @@ public class FloeRecordingAct extends AppCompatActivity
                     if(bleDeviceLeftConnected)
                     {
                         showMessage("Second boot connected successfully. Enjoy!");
+                        if(!recordingWorkThread.isAlive())
+                        {
+                            recordingWorkThread.start();
+                        }
+
                     }else
                     {
                         showMessage("First boot connected successfully. Please connect second boot.");
@@ -481,15 +493,14 @@ public class FloeRecordingAct extends AppCompatActivity
     {
         Log.d(TAG, "getCoP()");
         //assigning sensor values
-        int[] currentPoint = sensorData;
-        int BL = currentPoint[1];
-        int M5L = currentPoint[2];
-        int M1L = currentPoint[0];
-        int HL = currentPoint[3];
-        int BR = currentPoint[5];
-        int M5R = currentPoint[6];
-        int M1R = currentPoint[4];
-        int HR = currentPoint[7];
+        int BL = sensorData[1];
+        int M5L = sensorData[2];
+        int M1L = sensorData[0];
+        int HL = sensorData[3];
+        int BR = sensorData[5];
+        int M5R = sensorData[6];
+        int M1R = sensorData[4];
+        int HR = sensorData[7];
         //TODO: retrieve weight from database to assign
         FloeDataPt temp = db.getDataPt(1);
         int weight = temp.getSensorData(0);
@@ -515,28 +526,20 @@ public class FloeRecordingAct extends AppCompatActivity
         return CoP;
     }
 
-    private int[] extractData(byte[] rawData)
+    private int[] extractData(byte[][] rawData)
     {
-        //TODO: verify the data-extracting function works
         Log.d(TAG, "extractData()");
-        byte[] dataBytes = {0,0,0,0,0,0,0,0};
         int sensorValue;
         int[] sensorData = new int[8];
-        int baseIndex=0;//baseIndex tells us where to write the data in the sensorData array. We start with left boot
 
-        for(int j=0;j<8;j++)
+        for(int k=0;k<2;k++)
         {
-            dataBytes[2]=rawData[j*2];
-            dataBytes[3]=rawData[j*2+1];
-            sensorValue=0;
-
-            for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 8; j += 2)
             {
-                int shift = (4 - 1 - i) * 8;
-                sensorValue += (dataBytes[i] & 0x000000FF) << shift;
+                sensorValue = ByteBuffer.wrap(rawData[k]).order(ByteOrder.LITTLE_ENDIAN).getShort(j);//TODO: verify that data is indeed in little-endian
+                sensorData[(k*4)+(j/2)] = Linearize(sensorValue);
+                Log.i(TAG, "Unpacked data from sensor " + ((k*4)+(j/2)) + ". value = " + sensorValue);
             }
-            sensorData[baseIndex+j] = Linearize(sensorValue);
-            Log.i(TAG, "Unpacked data from sensor " + (baseIndex+j) + ". value = " + sensorValue);
         }
         return sensorData;
     }
