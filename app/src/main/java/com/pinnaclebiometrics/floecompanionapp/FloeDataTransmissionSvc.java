@@ -22,6 +22,7 @@ import android.os.Binder;
 
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.pinnaclebiometrics.floecompanionapp.FloeBLESvc.FloeBLEBinder;
 
@@ -212,9 +213,11 @@ public class FloeDataTransmissionSvc extends Service
                                     if(FloeMainMenuAct.isDeviceConnected(LEFT_BOOT))
                                     {
                                         deviceNum=LEFT_BOOT;
+                                        //showMessage("Connection to "+FloeMainMenuAct.LEFT_NAME+" Boot was lost unexpectedly. Please reconnect.");
                                     }else if(FloeMainMenuAct.isDeviceConnected(RIGHT_BOOT))
                                     {
                                         deviceNum=RIGHT_BOOT;
+                                        //showMessage("Connection to "+FloeMainMenuAct.RIGHT_NAME+" Boot was lost unexpectedly. Please reconnect.");
                                     }
                                    // break;
 
@@ -236,13 +239,15 @@ public class FloeDataTransmissionSvc extends Service
                         {
                             connectionState = STATE_1_CONNECTED;
                             deviceNum=RIGHT_BOOT;
-                            Log.i(TAG, "Disconnected from GATT server 2 (right boot.");
+                            //showMessage("Connection to "+FloeMainMenuAct.RIGHT_NAME+" Boot was lost unexpectedly. Please reconnect.");
+                            Log.i(TAG, "Disconnected from Right Boot GATT server.");
 
                         }else if(bleGattRight!=null)
                         {
                             connectionState = STATE_1_CONNECTED;
                             deviceNum=LEFT_BOOT;
-                            Log.i(TAG, "Disconnected from GATT server 1 (left boot).");
+                            //showMessage("Connection to "+FloeMainMenuAct.LEFT_NAME+" Boot was lost unexpectedly. Please reconnect.");
+                            Log.i(TAG, "Disconnected from Left Boot GATT server.");
 
                         }else
                         {
@@ -609,7 +614,7 @@ public class FloeDataTransmissionSvc extends Service
             rawData[1] = rightBootRawData;
 
             leftBootDataReceived=false;
-            rightBootDataReceived=false;
+            rightBootDataReceived = false;
 
             return rawData;
         }
@@ -780,53 +785,65 @@ public class FloeDataTransmissionSvc extends Service
         switch (deviceNum)
         {
             case LEFT_BOOT:
-                BluetoothGattService RxService = bleGattLeft.getService(RX_SERVICE_UUID);
-                Log.e(TAG, "bleGattLeft null " + bleGattLeft);
-                Log.d(TAG, "bleGattLeft RxService = " + RxService.toString());
-                if (RxService == null)
+                if(bleGattLeft!=null)
                 {
-                    Log.e(TAG, "Rx service not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
-                    return;
-                }
-                BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
-                Log.d(TAG, "bleGattLeft RxChar = "+RxChar.toString());
-                if (RxChar == null)
-                {
-                    Log.e(TAG,"Rx characteristic not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
-                    return;
-                }
-                RxChar.setValue(value);
-                boolean status = bleGattLeft.writeCharacteristic(RxChar);
+                    BluetoothGattService RxService = bleGattLeft.getService(RX_SERVICE_UUID);
+                    Log.e(TAG, "bleGattLeft null " + bleGattLeft);
+                    Log.d(TAG, "bleGattLeft RxService = " + RxService.toString());
+                    if (RxService == null)
+                    {
+                        Log.e(TAG, "Rx service not found!");
+                        createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
+                        return;
+                    }
+                    BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
+                    Log.d(TAG, "bleGattLeft RxChar = " + RxChar.toString());
+                    if (RxChar == null)
+                    {
+                        Log.e(TAG, "Rx characteristic not found!");
+                        createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
+                        return;
+                    }
+                    RxChar.setValue(value);
+                    boolean status = bleGattLeft.writeCharacteristic(RxChar);
 
-                Log.d(TAG, "write TXchar - status = " + status);
-                leftBootTransmitting=true;
+                    Log.d(TAG, "write TXchar - status = " + status);
+                    leftBootTransmitting = true;
+                }else
+                {
+                    Log.e(TAG, "Attempted to write characteristic to Left Boot, but Left Boot is not connected");
+                }
                 break;
 
             case RIGHT_BOOT:
-                RxService = bleGattRight.getService(RX_SERVICE_UUID);
-                Log.e(TAG, "bleGattRight null" + bleGattLeft);
-                Log.d(TAG, "bleGattRight RxService = " + RxService.toString());
-                if (RxService == null)
+                if(bleGattRight!=null)
                 {
-                    Log.e(TAG, "Rx service not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
-                    return;
-                }
-                RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
-                Log.d(TAG, "bleGattRight RxChar = "+RxChar.toString());
-                if (RxChar == null)
-                {
-                    Log.e(TAG,"Rx characteristic not found!");
-                    createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
-                    return;
-                }
-                RxChar.setValue(value);
-                status = bleGattRight.writeCharacteristic(RxChar);
+                    BluetoothGattService RxService = bleGattRight.getService(RX_SERVICE_UUID);
+                    Log.e(TAG, "bleGattRight null" + bleGattLeft);
+                    Log.d(TAG, "bleGattRight RxService = " + RxService.toString());
+                    if (RxService == null)
+                    {
+                        Log.e(TAG, "Rx service not found!");
+                        createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
+                        return;
+                    }
+                    BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
+                    Log.d(TAG, "bleGattRight RxChar = " + RxChar.toString());
+                    if (RxChar == null)
+                    {
+                        Log.e(TAG, "Rx characteristic not found!");
+                        createBroadcast(DEVICE_DOES_NOT_SUPPORT_UART, deviceNum);
+                        return;
+                    }
+                    RxChar.setValue(value);
+                    boolean status = bleGattRight.writeCharacteristic(RxChar);
 
-                Log.d(TAG, "write TXchar - status=" + status);
-                rightBootTransmitting=true;
+                    Log.d(TAG, "write TXchar - status=" + status);
+                    rightBootTransmitting = true;
+                }else
+                {
+                    Log.e(TAG, "Attempted to write characteristic to Right Boot, but Right Boot is not connected");
+                }
                 break;
 
             default:
@@ -1023,6 +1040,10 @@ public class FloeDataTransmissionSvc extends Service
         return dataTransmissionState;
     }
 
+    private void showMessage(String msg)
+    {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+    }
 
     //GattCallback before it was moved to a separate thread
     /*    private final BluetoothGattCallback bleGattCallback = new BluetoothGattCallback()

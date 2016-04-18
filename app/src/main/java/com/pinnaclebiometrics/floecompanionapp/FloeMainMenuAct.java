@@ -366,10 +366,12 @@ public class FloeMainMenuAct extends AppCompatActivity {
                 switch(deviceNum)
                 {
                     case FloeDataTransmissionSvc.LEFT_BOOT:
+                        showMessage("Connection to "+RIGHT_NAME+" Boot was lost unexpectedly. Please reconnect.");
                         bleDeviceLeftConnected=false;
                         break;
 
                     case FloeDataTransmissionSvc.RIGHT_BOOT:
+                        showMessage("Connection to "+RIGHT_NAME+" Boot was lost unexpectedly. Please reconnect.");
                         bleDeviceRightConnected=false;
                         break;
 
