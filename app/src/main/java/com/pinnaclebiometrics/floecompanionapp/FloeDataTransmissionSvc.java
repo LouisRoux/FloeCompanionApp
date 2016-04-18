@@ -195,8 +195,8 @@ public class FloeDataTransmissionSvc extends Service
                             connectionState = STATE_DISCONNECTED;
                             Log.i(TAG, "Disconnected from last GATT server.");
 
-                            switch(FloeDataTransmissionSvc.getDataTransmissionState())
-                            {
+                            //switch(FloeDataTransmissionSvc.getDataTransmissionState())
+                            //{
                                 //TODO: modify RTFeedback and Calibration Activities to include isDeviceConnected(), then un-comment
                         /*case FloeDataTransmissionSvc.STATE_RT_FEEDBACK:
                             if(FloeRTFeedbackAct.isDeviceConnected(LEFT_BOOT))
@@ -208,15 +208,15 @@ public class FloeDataTransmissionSvc extends Service
                             }
                             break;*/
 
-                                case FloeDataTransmissionSvc.STATE_RECORDING:
-                                    if(FloeRecordingAct.isDeviceConnected(LEFT_BOOT))
+                                //case FloeMainMenuAct.STATE_RECORDING:
+                                    if(FloeMainMenuAct.isDeviceConnected(LEFT_BOOT))
                                     {
                                         deviceNum=LEFT_BOOT;
-                                    }else if(FloeRecordingAct.isDeviceConnected(RIGHT_BOOT))
+                                    }else if(FloeMainMenuAct.isDeviceConnected(RIGHT_BOOT))
                                     {
                                         deviceNum=RIGHT_BOOT;
                                     }
-                                    break;
+                                   // break;
 
                         /*case FloeDataTransmissionSvc.STATE_CALIBRATING:
                             if(FloeCalibrationAct.isDeviceConnected(LEFT_BOOT))
@@ -228,9 +228,9 @@ public class FloeDataTransmissionSvc extends Service
                             }
                             break;*/
 
-                                default:
-                                    break;
-                            }
+                                //default:
+                                    //break;
+                            //}
 
                         }else if(bleGattLeft!=null)
                         {
@@ -303,14 +303,14 @@ public class FloeDataTransmissionSvc extends Service
                         //We don't want to do anything with the data
                         return;
                     }
-                    Log.d(TAG, "onCharacteristicChanged(");
+                    //Log.d(TAG, "onCharacteristicChanged(");
                     byte[] receivedChar = characteristic.getValue();
-                    Log.d(TAG, "characteristic: "+receivedChar[0]+" "+receivedChar[1]+" "+receivedChar[2]+" "+receivedChar[3]+" "+receivedChar[4]+" "+receivedChar[5]+" "+receivedChar[6]+" "+receivedChar[7]+" "+receivedChar[8]);
+                    //Log.d(TAG, "characteristic: "+receivedChar[0]+" "+receivedChar[1]+" "+receivedChar[2]+" "+receivedChar[3]+" "+receivedChar[4]+" "+receivedChar[5]+" "+receivedChar[6]+" "+receivedChar[7]+" "+receivedChar[8]);
 
                     if(receivedChar[0] == (byte) 0x4C)
                     {
                         //data received from left BMH
-                        Log.d(TAG, "Received data from left BMH");
+                        //Log.d(TAG, "Received data from left BMH");
                         for(int i=1;i<9;i++)
                         {
                             leftBootRawData[i-1] = receivedChar[i];
@@ -319,7 +319,7 @@ public class FloeDataTransmissionSvc extends Service
 
                     }else if(receivedChar[0] == (byte) 0x52)
                     {
-                        Log.d(TAG, "Received data from right BMH");
+                        //Log.d(TAG, "Received data from right BMH");
                         for(int i=1;i<9;i++)
                         {
                             rightBootRawData[i-1] = receivedChar[i];
@@ -332,11 +332,7 @@ public class FloeDataTransmissionSvc extends Service
                         Log.e(TAG, "Invalid header code");
                     }
 
-                    Log.d(TAG, "onCharacteristicChanged() completed correctly");
-
-                    //extractData(characteristic.getValue());
-
-                    //createBroadcast(ACTION_DATA_AVAILABLE, characteristic);
+                    //Log.d(TAG, "onCharacteristicChanged() completed correctly");
                 }
 
                 @Override
@@ -351,7 +347,7 @@ public class FloeDataTransmissionSvc extends Service
                         {
                             createBroadcast(ACTION_DEVICE_READY, RIGHT_BOOT);
                             Log.d(TAG, "starting data transfer");
-                            startDataTransfer();//TODO: make sure this is in the right place, potentially put in individual activities
+                            //startDataTransfer();//TODO: make sure this is in the right place, potentially put in individual activities
                         }else
                         {
                             //send broadcast for activity to prompt choice for second boot
@@ -378,7 +374,7 @@ public class FloeDataTransmissionSvc extends Service
 
                     if(char1 == 'L')
                     {
-                        if(char2 == 'L')
+                        if(char2 == 'E')
                         {
                             Log.d(TAG, "Left boot now transmitting data");
                             if (rightBootTransmitting)
@@ -395,6 +391,7 @@ public class FloeDataTransmissionSvc extends Service
                         }else if(char2 == 'D')
                         {
                             Log.d(TAG, "Left boot no longer transmitting data");
+                            leftBootTransmitting=false;
                             if (rightBootTransmitting)
                             {
                                 //both boots are transmitting data
@@ -417,6 +414,7 @@ public class FloeDataTransmissionSvc extends Service
                         if(char2 == 'D')
                         {
                             Log.d(TAG, "Right boot no longer transmitting data");
+                            rightBootTransmitting=false;
                             if (leftBootTransmitting)
                             {
                                 //both boots are transmitting data
@@ -911,10 +909,10 @@ public class FloeDataTransmissionSvc extends Service
 
     public void stopDataTransfer()
     {
-        //This function sends the expected values to tell the boards to start transmitting data
+        //This function sends the expected values to tell the boards to stop transmitting data
         Log.d(TAG, "stopDataTransfer()");
 
-        byte[] value = RIGHT_DISABLE.getBytes();//enable right boot
+        byte[] value = RIGHT_DISABLE.getBytes();//disable right boot
         Log.d(TAG, "writeRXCharacteristic (value "+RIGHT_DISABLE+", deviceNum RIGHT_BOOT)");
         writeRXCharacteristic(value, RIGHT_BOOT);
     }
