@@ -48,20 +48,13 @@ public class FloeRecordingAct extends AppCompatActivity
     //the connected bluetooth devices and their adapter
     private BluetoothManager bleManager;
     private BluetoothAdapter bleAdapter;
-<<<<<<< Updated upstream
     private BluetoothDevice bleDeviceLeft = null;
     private BluetoothDevice bleDeviceRight = null;
 
     public static final String LEFT_NAME = "Left";//used to parse device name and choose which device object to operate on
     public static final String RIGHT_NAME = "Right";//same as LEFT_NAME
-=======
-    private BluetoothDevice bleDevice1 = null;
-    private BluetoothDevice bleDevice2 = null;
 
     volatile private boolean recordingFlag = false;
-
-    private boolean waitMore;
->>>>>>> Stashed changes
 
     private static boolean bleDeviceLeftConnected = false;
     private static boolean bleDeviceRightConnected = false;
@@ -74,7 +67,6 @@ public class FloeRecordingAct extends AppCompatActivity
         final ImageButton button = (ImageButton) findViewById(R.id.button1);
 
         super.onCreate(savedInstanceState);
-        //TODO: set up a basic layout for the recoding activity, including a button to stop/start recording
         setContentView(R.layout.activity_floe_recording);
 
         db = new FloeRunDatabase(getApplicationContext());
@@ -117,24 +109,33 @@ public class FloeRecordingAct extends AppCompatActivity
         Log.d(TAG, "Starting activity with REQUEST_SELECT_DEVICE");
         startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
 
-        button.setOnClickListener(new View.OnClickListener() {
-        @Override
-            public void onClick(View v) {
-                if (recordingFlag){
+        button.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                if (recordingFlag)
+                {
                     button.setBackgroundResource(R.drawable.stop1);
                     recordingFlag = false;
-                }
-                else{
+                } else
+                {
                     button.setBackgroundResource(R.drawable.record1);
                     recordingFlag = true;
                 }
             }
         });
 
-        final Thread t = new Thread(){
+        final Thread t = new Thread()
+        {
             @Override
-            public void run(){
-                while (recordingFlag){
+            public void run()
+            {
+                //start data transfer
+                dataService.startDataTransfer();
+
+                while (recordingFlag)
+                {
                     recordDataPt();
                 }
             }
@@ -454,9 +455,11 @@ public class FloeRecordingAct extends AppCompatActivity
 
     private void recordDataPt()
     {
-        //TODO: call this method in the recording activity worker thread
+        //call this method in the recording activity worker thread to perform all necessary recording operations
         Log.d(TAG, "recordDataPt()");
-        FloeDataPt dataPt = dataService.getDataPt();
+        int[] sensorData = extractData(dataService.getRawData());
+        int[] centreOfPressure = getCoP(sensorData);
+        FloeDataPt dataPt = new FloeDataPt(System.currentTimeMillis(), sensorData, centreOfPressure);
 
         if(newRun)
         {
@@ -472,6 +475,81 @@ public class FloeRecordingAct extends AppCompatActivity
         dataPt.setDataPtNum(dataPtNum);
         db.createDataPt(dataPt);
         dataPtNum++;
+    }
+
+    public int[] getCoP(int[] sensorData)
+    {
+        Log.d(TAG, "getCoP()");
+        //assigning sensor values
+        int[] currentPoint = sensorData;
+        int BL = currentPoint[1];
+        int M5L = currentPoint[2];
+        int M1L = currentPoint[0];
+        int HL = currentPoint[3];
+        int BR = currentPoint[5];
+        int M5R = currentPoint[6];
+        int M1R = currentPoint[4];
+        int HR = currentPoint[7];
+        //TODO: retrieve weight from database to assign
+        FloeDataPt temp = db.getDataPt(1);
+        int weight = temp.getSensorData(0);
+
+        //TODO: get values for insole distances - relative to 540x444 quadrants
+
+        int dBx = 270;
+        int dBy = 400;
+        int dM5x = 500;
+        int dM5y = 210;
+        int dM1x = 270;
+        int dM1y = 210;
+        int dHx = 360;
+        int dHy = 400;
+
+        int CoPx = ( (BR-BL)*dBx + (M5R-M5L)*dM5x + (M1R-M1L)*dM1x + (HR-HL)*dHx)/weight;
+        int CoPy = ( (BR+BL)*dBy + (M5R+M5L)*dM5y + (M1R+M1L)*dM1y - (HR+HL)*dHy)/weight;
+
+        Log.d(TAG, "BL="+BL+" BR="+BR+"M5L="+M5L+" M5R="+M5R+"M1L="+M1L+" M1R="+M1R+"HL="+HL+" HR="+HR);
+        Log.d(TAG, "CoPx = "+CoPx+" , CoPy = "+CoPy);
+
+        int[] CoP = {CoPx, CoPy};
+        return CoP;
+    }
+
+    private int[] extractData(byte[] rawData)
+    {
+        //TODO: verify the data-extracting function works
+        Log.d(TAG, "extractData()");
+        byte[] dataBytes = {0,0,0,0,0,0,0,0};
+        int sensorValue;
+        int[] sensorData = new int[8];
+        int baseIndex=0;//baseIndex tells us where to write the data in the sensorData array. We start with left boot
+
+        for(int j=0;j<8;j++)
+        {
+            dataBytes[2]=rawData[j*2];
+            dataBytes[3]=rawData[j*2+1];
+            sensorValue=0;
+
+            for (int i = 0; i < 4; i++)
+            {
+                int shift = (4 - 1 - i) * 8;
+                sensorValue += (dataBytes[i] & 0x000000FF) << shift;
+            }
+            sensorData[baseIndex+j] = Linearize(sensorValue);
+            Log.i(TAG, "Unpacked data from sensor " + (baseIndex+j) + ". value = " + sensorValue);
+        }
+        return sensorData;
+    }
+
+    public int Linearize(int v)
+    {
+        Log.d(TAG, "Linearize("+v+")");
+        double r2 = 10000;
+        //TODO: input voltage value?
+        double inputVoltage = 3;
+        double exponent = 1/0.9;
+
+        return (int) Math.pow((inputVoltage/v - 1)*r2, exponent);
     }
 
     private static IntentFilter makeDataTransmissionIntentFilter()
